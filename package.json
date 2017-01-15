@@ -1,0 +1,26 @@
+{
+  "name": "pairwise-comparator",
+  "version": "1.0.0",
+  "description": "Pairwise comparison framework",
+  "main": "server.js",
+  "dependencies": {
+    "bluebird": "^3.4.7",
+    "body-parser": "^1.15.2",
+    "cookie-parser": "^1.4.3",
+    "express": "^4.14.0",
+    "express-session": "^1.14.2",
+    "fs-promise": "^1.0.0",
+    "passport": "^0.3.2",
+    "pug": "^2.0.0-beta6",
+    "sqlite": "^2.2.4"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.18.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "author": "cbuntain@cs.umd.edu",
+  "license": "MIT"
+}

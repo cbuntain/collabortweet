@@ -1,0 +1,24 @@
+//- index.pug
+doctype html
+html
+	head
+		include includes/head.pug
+	body
+		include includes/nav.pug
+
+		<!-- Main jumbotron -->
+		div(class="jumbotron")
+			div(class="container")
+				h2 Welcome. Select your user.
+		
+		//- Display options
+		div(class="container")
+			each v in dataMap.userList
+				div(class="row")
+					div(class="panel panel-default")
+						div(class="panel-body")
+							h4 
+								a(href="/login?userId=" + v.id) #{v.id}. #{v.displayName}
+
+
+		include includes/jsFooter.pug

@@ -1,0 +1,48 @@
+//- pairView.pug
+doctype html
+html
+	head
+		include includes/head.pug
+	body
+		include includes/nav.pug
+
+		<!-- Main jumbotron -->
+		div(class="jumbotron")
+			div(class="container")
+				h2 Question:
+				p #{question}
+
+		//- Display options
+		div(class="container")
+			div(class="row")
+				div(class="col-md-6")
+					div(class="panel panel-default")
+						div(class="panel-heading text-center") 
+							h4(class="btn btn-primary btn-lg", id="left-tweet-button") Option 
+								u A
+						div(class="panel-body")
+							p(id="left-tweet-panel")
+				div(class="col-md-6")
+					div(class="panel panel-default")
+						div(class="panel-heading text-center") 
+							h4(class="btn btn-primary btn-lg", id="right-tweet-button") Option 
+								u B
+						div(class="panel-body")
+							p(id="right-tweet-panel")
+			div(class="row text-center")
+				div(class="btn btn-warning btn-lg", id="undecided-button") 
+					u C
+					span an't Decide
+
+			//- Footer navigation
+				div(class="row navbar-fixed-bottom")
+					div(class=".col-md-6")
+						ol(class="breadcrumb")
+							li(id="prevCrumb")
+							li(class="active") Current
+							li(id="prevCrumb")
+
+		include includes/jsFooter.pug
+
+		<!-- Script for running the pair viewport -->
+		script(src="/static/js/pairview.js")
