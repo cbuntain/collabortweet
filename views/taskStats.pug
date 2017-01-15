@@ -1,0 +1,30 @@
+//- index.pug
+doctype html
+html
+	head
+		include includes/head.pug
+	body
+		include includes/nav.pug
+
+		<!-- Main jumbotron -->
+		div(class="jumbotron")
+			div(class="container")
+				h2 Welcome. Select your user.
+		
+		//- Display options
+		div(class="container")
+			h2 Available Tasks:
+			each v in dataMap.tasks
+				div(class="row")
+					div(class="panel panel-default")
+
+						div(class="panel-heading") 
+							h4 
+								a(href="/pairView/" + v.taskId) Task #{v.taskId}: #{v.taskName}
+
+						div(class="panel-body")
+							p #{v.question}
+								a(href="/login?userId=" + v.id) #{v.id}. #{v.displayName}
+
+
+		include includes/jsFooter.pug

@@ -33,10 +33,6 @@ app.set('view engine', 'pug')
 // Set the static directory
 app.use('/static', express.static('public'))
 
-// Specify the default task
-// TODO: MAKE THIS DYNAMIC
-var GLOBAL_TASK = 1
-
 // Function for getting a random element
 var getRandomElement = function(arr) {
 	var len = arr.length;
@@ -69,22 +65,53 @@ app.get('/login', function(req, res) {
 		console.log("User Info: " + req.session.user.username);
 
 		if (user) { // Successful login
-			res.redirect('/pairView');
+			res.redirect('/taskView');
 		} else { // failed login
 			res.status(403);
 		}
 	})
 })
 
+// Send a list of the tasks
+app.get('/taskStats', function(req, res) {
+	db.all('SELECT taskId, taskName, question FROM tasks ORDER BY taskId')
+		.then(function(taskData) {
+			dataMap = {
+				tasks: taskData
+			}
+
+			res.render('taskStats', dataMap)
+		});
+})
+
+// Send a list of the tasks
+app.get('/taskView', function(req, res) {
+	db.all('SELECT taskId, taskName, question FROM tasks ORDER BY taskId')
+		.then(function(taskData) {
+			dataMap = {
+				tasks: taskData, 
+				authorized: req.session.user ? true : false,
+				user: req.session.user,
+			}
+
+			res.render('taskView', dataMap)
+		});
+})
+
 // Send the view for doing comparisons
-app.get('/pairView', function (req, res) {
+app.get('/pairView/:id', function (req, res) {
+
+	// Store the task ID in the session
+	var requestedTask = req.params.id
+	req.session.taskId = requestedTask
 
 	var currentUser = req.session.user
 	console.log("Current User Session: " + currentUser.username)
 
-	db.get('SELECT taskName, question FROM tasks WHERE taskId = ?', GLOBAL_TASK)
+	db.get('SELECT taskName, question FROM tasks WHERE taskId = ?', requestedTask)
 		.then(function(taskData) {
 			dataMap = {
+				taskId: requestedTask,
 				pageTitle: taskData.taskName, 
 				question: taskData.question,
 				authorized: req.session.user ? true : false,
@@ -97,6 +124,10 @@ app.get('/pairView', function (req, res) {
 
 // Send a pair
 app.get('/pair', function(req, res) {
+
+	// Pull the task from the session
+	var requestedTask = req.session.taskId
+
 	console.log("New pair requested!");
 
 	var localUser = req.session.user;
@@ -104,7 +135,7 @@ app.get('/pair', function(req, res) {
 	console.log(localUser);
 
 	// TODO: Add task id here.
-	db.all('SELECT elementId FROM pairChoices WHERE taskId = ? ORDER BY counter ASC LIMIT 10', GLOBAL_TASK)
+	db.all('SELECT elementId FROM pairChoices WHERE taskId = ? ORDER BY counter ASC LIMIT 10', requestedTask)
 		.then(function(elements) {
 
 			var elementList = elements.map(function(x) {
