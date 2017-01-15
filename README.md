@@ -9,3 +9,5 @@ The framework is also designed to support multiple users and multiple tasks, but
 ## Setup
 
 You should be able to use `npm install` to set up the server and download any dependencies. Then, `npm start` will run the server, which you can access (currently) at [http://localhost:3000]. 
+
+Before starting the server, you need to set up the database. This can be done using the createSchema.sql file (e.g., `sqlite3 pairComp.sqlite3 < createSchema.sql`). Then, use the `tweets2sql.py` python script to populate the database.
