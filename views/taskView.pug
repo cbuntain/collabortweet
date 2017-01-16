@@ -9,7 +9,7 @@ html
 		<!-- Main jumbotron -->
 		div(class="jumbotron")
 			div(class="container")
-				h2 Welcome. Select your user.
+				h2 Welcome. Select your task.
 		
 		//- Display options
 		div(class="container")
@@ -24,7 +24,6 @@ html
 
 						div(class="panel-body")
 							p #{v.question}
-								a(href="/login?userId=" + v.id) #{v.id}. #{v.displayName}
 
 
 		include includes/jsFooter.pug

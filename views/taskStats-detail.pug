@@ -9,22 +9,24 @@ html
 		<!-- Main jumbotron -->
 		div(class="jumbotron")
 			div(class="container")
-				h2 Welcome. Select your task.
+				h2 #{taskInfo.taskName} Question:
+				p #{taskInfo.question}
 		
 		//- Display options
 		div(class="container")
-			h2 Available Tasks:
-			each v in dataMap.tasks
+			h2 Comparisons:
+			each v in compList
 				div(class="row")
 					div(class="panel panel-default")
 
 						div(class="panel-heading") 
-							h4 
-								a(href="/taskStats/" + v.taskId) Task #{v.taskId}: #{v.taskName}
+							h4 Selected #{v.decision}
 
 						div(class="panel-body")
-							p Comparisons Answered: #{v.counter}
-							p #{v.question}
+							h4 Item ID: #{v.lId}
+							p #{v.lText}
+							h4 Item ID: #{v.rId}
+							p #{v.rText}
 
 
 		include includes/jsFooter.pug

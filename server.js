@@ -72,15 +72,48 @@ app.get('/login', function(req, res) {
 	})
 })
 
-// Send a list of the tasks
+// Send a list of the tasks for inspection
 app.get('/taskStats', function(req, res) {
-	db.all('SELECT taskId, taskName, question FROM tasks ORDER BY taskId')
+	db.all("SELECT t.taskId, t.taskName, t.question, COUNT(c.compareId) AS counter \
+		FROM tasks t \
+			LEFT OUTER JOIN pairs p ON t.taskId = p.taskId \
+			LEFT OUTER JOIN comparisons c ON p.pairId = c.pairId \
+		GROUP BY t.taskId \
+		ORDER BY t.taskId")
 		.then(function(taskData) {
 			dataMap = {
 				tasks: taskData
 			}
 
 			res.render('taskStats', dataMap)
+		});
+})
+
+// Detailed view for a given task
+app.get('/taskStats/:taskId', function(req, res) {
+	var taskId = req.params.taskId
+
+	Promise.all([
+		db.get("SELECT taskName, question FROM tasks WHERE taskId = ?", taskId),
+		db.all("SELECT c.decision, \
+				e1.elementId AS lId, e1.elementText AS lText, e1.externalId AS lExt, \
+				e2.elementId AS rId, e2.elementText AS rText, e2.externalId AS rExt \
+			FROM pairs p \
+				JOIN elements AS e1 ON e1.elementId = p.leftElement \
+				JOIN elements AS e2 ON e2.elementId = p.rightElement \
+				JOIN comparisons c ON p.pairId = c.pairId \
+			WHERE p.taskId = ?", taskId)])
+		.then(function(taskInfoArray) {
+
+			var taskInfo = taskInfoArray[0];
+			var comps = taskInfoArray[1];
+
+			dataMap = {
+				taskInfo: taskInfo,
+				compList: comps,
+			}
+
+			res.render('taskStats-detail', dataMap)
 		});
 })
 
