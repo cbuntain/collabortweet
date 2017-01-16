@@ -5,10 +5,15 @@ import sys
 import json
 import codecs
 import itertools
+import random
 
 taskDescPath = sys.argv[1]
 sqlitePath = sys.argv[2]
 tweetPath = sys.argv[3]
+
+pairCount = None
+if ( len(sys.argv) > 4 ):
+	pairCount = int(sys.argv[4])
 
 taskDesc = {}
 with codecs.open(taskDescPath, "r", "utf8") as inFile:
@@ -66,7 +71,29 @@ for elTup in elementList:
 print "Element Count:", len(elementIds)
 
 # Create the pairs
-pairList = [(taskId, x[0], x[1]) for x in itertools.combinations(elementIds, 2)]
+pairList = None
+
+# If we didn't specify a number of pairs, find all
+if ( pairCount == None ):
+	pairList = itertools.combinations(elementIds, 2)
+
+else: # Otherwise, randomly select k pairs
+	pairAccum = set()
+
+	for eIndex in range(len(elementIds)):
+		eId = elementIds[eIndex]
+		startIndex = max(0, eIndex-1)
+		others = elementIds[:startIndex] + elementIds[eIndex+1:]
+
+		# Put the pair in canonical order to avoid duplicates
+		newPairs = set(map(lambda x: (min(eId, x), max(eId, x)), 
+			random.sample(others, pairCount)))
+
+		pairAccum = pairAccum.union(newPairs)
+
+	pairList = list(pairAccum)
+
+pairList = [(taskId, x[0], x[1]) for x in pairList]
 print "Pair Count:", len(pairList)
 
 c.executemany('INSERT INTO pairs (taskId, leftElement, rightElement) VALUES (?,?,?)', 
