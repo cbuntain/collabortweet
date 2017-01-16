@@ -5,34 +5,10 @@ $( document ).ready(function() {
 	loadTweets();
 });
 
-var leftSelect = function() {
+var sendSelectedTweet = function(pairId, selectedId) {
 	result = {
 		pair: pairId,
-		selected: tweetPair.left.tweet.id,
-	}
-
-	$.post("/pair", result, function(data) {
-		console.log("Successfully sent selection...");
-		loadTweets();
-	})
-}
-
-var rightSelect = function() {
-	result = {
-		pair: pairId,
-		selected: tweetPair.right.tweet.id,
-	}
-
-	$.post("/pair", result, function(data) {
-		console.log("Successfully sent selection...");
-		loadTweets();
-	})
-}
-
-var undecideSelect = function() {
-	result = {
-		pair: pairId,
-		selected: -1,
+		selected: selectedId,
 	}
 
 	$.post("/pair", result, function(data) {
@@ -44,6 +20,7 @@ var undecideSelect = function() {
 var loadTweets = function() {
 
 	console.log("loadTweets() called.");
+	$("#loadingDialog").modal('show');
 
 	$.get("/pair", function(json) {
 		tweetPair = json;
@@ -58,25 +35,32 @@ var loadTweets = function() {
 			switch(e.which) {
 				case 65:
 				case 97:
-					leftSelect();
+					sendSelectedTweet(pairId, tweetPair.left.tweet.id);
 					break;
 
 				case 66:
 				case 98:
-					rightSelect();
+					sendSelectedTweet(pairId, tweetPair.right.tweet.id);
 					break;
 
 				case 67:
 				case 99:
-					undecideSelect();
+					sendSelectedTweet(pairId, -1);
 					break;
 			}
 		});
 
-		$("#left-tweet-button").off("click").click(leftSelect);
-		$("#right-tweet-button").off("click").click(rightSelect);
-		$("#undecided-button").off("click").click(undecideSelect);
+		$("#left-tweet-button").off("click").click(function() {
+			sendSelectedTweet(pairId, tweetPair.left.tweet.id);
+		});
+		$("#right-tweet-button").off("click").click(function() {
+			sendSelectedTweet(pairId, tweetPair.right.tweet.id);
+		});
+		$("#undecided-button").off("click").click(function() {
+			sendSelectedTweet(pairId, -1);
+		});
 
+		$("#loadingDialog").modal('hide');
 		console.log("Loaded pair...");
 	})
 

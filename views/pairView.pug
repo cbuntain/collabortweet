@@ -9,7 +9,7 @@ html
 		<!-- Main jumbotron -->
 		div(class="jumbotron")
 			div(class="container")
-				h2 Question:
+				h2 #{taskName} Question:
 				p #{question}
 
 		//- Display options
@@ -41,6 +41,14 @@ html
 							li(id="prevCrumb")
 							li(class="active") Current
 							li(id="prevCrumb")
+
+			div(class="modal fade", id="loadingDialog", tabindex="-1" role="dialog")
+				div(class="modal-dialog", role="document")
+					div(class="modal-content")
+						div(class="modal-header")
+							h4(class="modal-title") Please Wait...
+						div(class="modal-body text-center")
+							img(src="/static/imgs/spinner.gif")
 
 		include includes/jsFooter.pug
 
