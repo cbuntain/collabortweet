@@ -112,7 +112,7 @@ app.get('/pairView/:id', function (req, res) {
 		.then(function(taskData) {
 			dataMap = {
 				taskId: requestedTask,
-				pageTitle: taskData.taskName, 
+				taskName: taskData.taskName, 
 				question: taskData.question,
 				authorized: req.session.user ? true : false,
 				user: req.session.user,
@@ -134,8 +134,9 @@ app.get('/pair', function(req, res) {
 	console.log("Local User:");
 	console.log(localUser);
 
-	// TODO: Add task id here.
-	db.all('SELECT elementId FROM pairChoices WHERE taskId = ? ORDER BY counter ASC LIMIT 10', requestedTask)
+	// Get a set of candidate elements
+	// db.all('SELECT elementId FROM pairChoices WHERE taskId = ? ORDER BY counter ASC LIMIT 10', requestedTask)
+	db.all('SELECT elementId FROM pairChoices WHERE taskId = ? LIMIT 100', requestedTask)
 		.then(function(elements) {
 
 			var elementList = elements.map(function(x) {
@@ -143,7 +144,7 @@ app.get('/pair', function(req, res) {
 			});
 
 			console.log("Found element lists!");
-			console.log(elementList);
+			// console.log(elementList);
 			var targetElement = getRandomElement(elementList);
 			console.log("Target Element: " + targetElement);
 
@@ -165,7 +166,7 @@ app.get('/pair', function(req, res) {
 			});
 
 			console.log("Found candidiate pairs!");
-			console.log(pairList);
+			// console.log(pairList);
 			
 			var targetPair = getRandomElement(pairList);
 			console.log("Target Pair: " + targetPair);
