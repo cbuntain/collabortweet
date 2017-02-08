@@ -46,25 +46,33 @@ var getRandomElement = function(arr) {
 // Root view
 app.get('/', function (req, res) {
 
-	dataMap = {
-		pageTitle: 'Welcome', 
-		message: 'Hello there!',
-		authorized: false,
-		userList: userDb.users.records,
-	}
+	// Call the user records function on the database to get a list of users
+	userDb.users.getUsers(db, function(userData) {
 
-	res.render('index', dataMap)
+		console.log("Successfully retrieved users...");
+		// console.log(userData);
+
+		dataMap = {
+			pageTitle: 'Welcome', 
+			message: 'Hello there!',
+			authorized: false,
+			userList: userData,
+		}
+
+		res.render('index', dataMap)
+	})
 })
 
 // Login
 app.get('/login', function(req, res) {
 	console.log("Welcome, " + req.query.userId)
 
-	var userObj = userDb.users.findById(req.query.userId, function(data, user) {
+	var userObj = userDb.users.findById(db, req.query.userId, function(data, user) {
 		req.session.user = user;
-		console.log("User Info: " + req.session.user.username);
+		// console.log("User Info: " + req.session.user);
 
 		if (user) { // Successful login
+			console.log("User Info: " + req.session.user.screenname);
 			res.redirect('/taskView');
 		} else { // failed login
 			res.status(403);
