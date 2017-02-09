@@ -280,78 +280,76 @@ app.get('/pair', function(req, res) {
 	console.log("Local User:");
 	console.log(localUser);
 
-	// Get a set of candidate elements
-	// db.all('SELECT elementId FROM pairChoices WHERE taskId = ? ORDER BY counter ASC LIMIT 10', requestedTask)
-	db.all('SELECT elementId FROM pairChoices WHERE taskId = ?', requestedTask)
-		.then(function(elements) {
-
-			var elementList = elements.map(function(x) {
-				return x["elementId"]
-			});
-
-			console.log("Found element lists!");
-			// console.log(elementList);
-			var targetElement = getRandomElement(elementList);
-			console.log("Target Element: " + targetElement);
-
-			return db.all('SELECT pairId FROM pairs prs \
+	// Find a pair we haven't seen before
+	db.all('SELECT pairId FROM pairs prs \
 				 WHERE \
-				 	(prs.leftElement = ? OR prs.rightElement = ?) AND \
+				 	prs.taskId = ? AND \
 				 	( \
 					 	SELECT COUNT(*)  \
 						FROM comparisons cps  \
 						WHERE cps.pairId = prs.pairId \
 							AND cps.userId = ? \
 				 	) = 0 \
-				 LIMIT 100', [targetElement, targetElement, localUser.userId]);
-		})
+				 LIMIT 100', [requestedTask, localUser.userId])
 		.then(function(pairs) {
 
-			var pairList = pairs.map(function(x) {
-				return x["pairId"]
-			});
+			if ( pairs.length > 0 ) {
+				var pairList = pairs.map(function(x) {
+					return x["pairId"]
+				});
 
-			console.log("Found candidiate pairs!");
-			// console.log(pairList);
-			
-			var targetPair = getRandomElement(pairList);
-			console.log("Target Pair: " + targetPair);
-			
-			return Promise.all([
-				targetPair,
-				db.get('SELECT el.elementId, el.elementText FROM \
-					elements el JOIN pairs pr ON pr.leftElement = el.elementId \
-					WHERE pr.pairId = ?', targetPair),
-				db.get('SELECT el.elementId, el.elementText FROM \
-					elements el JOIN pairs pr ON pr.rightElement = el.elementId \
-					WHERE pr.pairId = ?', targetPair)
-			]);
+				console.log("Found candidiate pairs!");
+				// console.log(pairList);
+				
+				var targetPair = getRandomElement(pairList);
+				console.log("Target Pair: " + targetPair);
+				
+				return Promise.all([
+					targetPair,
+					db.get('SELECT el.elementId, el.elementText FROM \
+						elements el JOIN pairs pr ON pr.leftElement = el.elementId \
+						WHERE pr.pairId = ?', targetPair),
+					db.get('SELECT el.elementId, el.elementText FROM \
+						elements el JOIN pairs pr ON pr.rightElement = el.elementId \
+						WHERE pr.pairId = ?', targetPair)
+				]);
+			} else {
+				console.log("No pairs. Done!");
+				return Promise.resolve({ empty : true });
+			}
 		})
 		.then(function(tweets) {
-			var pairId = tweets[0];
-			var leftTweet = tweets[1];
-			var rightTweet = tweets[2];
 
-			var tweetPair = {
-				id: pairId,
-				left: {
-					tweet: {
-						text: leftTweet.elementText,
-						id: leftTweet.elementId
+			if ( !("empty" in tweets) ) {
+				var pairId = tweets[0];
+				var leftTweet = tweets[1];
+				var rightTweet = tweets[2];
+
+				var tweetPair = {
+					id: pairId,
+					left: {
+						tweet: {
+							text: leftTweet.elementText,
+							id: leftTweet.elementId
+						},
+						selected: false
 					},
-					selected: false
-				},
-				right: {
-					tweet: {
-						text: rightTweet.elementText,
-						id: rightTweet.elementId
-					},
-					selected: false
+					right: {
+						tweet: {
+							text: rightTweet.elementText,
+							id: rightTweet.elementId
+						},
+						selected: false
+					}
 				}
-			}
 
-			res.setHeader('Content-Type', 'application/json');
-			res.send(JSON.stringify(tweetPair));
+				res.setHeader('Content-Type', 'application/json');
+				res.send(JSON.stringify(tweetPair));
+			} else {
+				console.log("Nothing to send.");
+				res.setHeader('Content-Type', 'application/json');
+				res.send(JSON.stringify({ empty : true }));
+			}
 		});
 })
 
