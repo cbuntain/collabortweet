@@ -1,7 +1,8 @@
 CREATE TABLE IF NOT EXISTS tasks (
 	taskId INTEGER PRIMARY KEY,
 	taskName TEXT,
-	question TEXT
+	question TEXT,
+	taskType INTEGER
 );
 
 CREATE TABLE IF NOT EXISTS users (
@@ -16,6 +17,19 @@ CREATE TABLE IF NOT EXISTS elements (
 	elementText TEXT NOT NULL,
 	taskId INTEGER NOT NULL,
 	externalId INTEGER
+);
+
+CREATE TABLE IF NOT EXISTS labels (
+	labelId INTEGER PRIMARY KEY,
+	labelText TEXT NOT NULL,
+	taskId INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS elementLabels (
+	elementLabelId INTEGER PRIMARY KEY,
+	elementId INTEGER NOT NULL,
+	labelId INTEGER NOT NULL,
+	userId INTEGER NOT NULL,
 );
 
 CREATE TABLE IF NOT EXISTS pairs (

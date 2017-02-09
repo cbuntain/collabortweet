@@ -7,7 +7,7 @@ exports.getUsers = function(db, cb) {
 
 exports.findById = function(db, id, cb) {
 
-  db.get("SELECT screenname, fname, lname FROM users WHERE userId = ?", id)
+  db.get("SELECT userId, screenname, fname, lname FROM users WHERE userId = ?", id)
     .then(function(userData) {
       cb(null, userData);
     });

@@ -72,7 +72,7 @@ app.get('/login', function(req, res) {
 		// console.log("User Info: " + req.session.user);
 
 		if (user) { // Successful login
-			console.log("User Info: " + req.session.user.screenname);
+			console.log("User Info: " + req.session.user.screenname + ", " + req.session.user.userId);
 			res.redirect('/taskView');
 		} else { // failed login
 			res.status(403);
@@ -127,7 +127,7 @@ app.get('/taskStats/:taskId', function(req, res) {
 
 // Send a list of the tasks
 app.get('/taskView', function(req, res) {
-	db.all('SELECT taskId, taskName, question FROM tasks ORDER BY taskId')
+	db.all('SELECT taskId, taskName, question, taskType FROM tasks ORDER BY taskId')
 		.then(function(taskData) {
 			dataMap = {
 				tasks: taskData, 
@@ -136,6 +136,111 @@ app.get('/taskView', function(req, res) {
 			}
 
 			res.render('taskView', dataMap)
+		});
+})
+
+
+// Send the view for doing labeling
+app.get('/labelerView/:id', function (req, res) {
+
+	// Store the task ID in the session
+	var requestedTask = req.params.id
+	req.session.taskId = requestedTask
+
+	var currentUser = req.session.user
+	console.log("Current User Session: " + currentUser.screenname)
+
+	db.get('SELECT taskName, question FROM tasks WHERE taskId = ?', requestedTask)
+		.then(function(taskData) {
+			taskMap = {
+				taskId: requestedTask,
+				taskName: taskData.taskName, 
+				question: taskData.question,
+			}
+
+			return Promise.all([
+				taskMap,
+				db.all('SELECT labelId, labelText FROM labels WHERE taskId = ?', requestedTask)
+			]);
+		})
+		.then(function(labelData) {
+
+			var taskData = labelData[0];
+			var labelList = labelData[1];
+
+			console.log(labelList);
+			console.log(labelList.length);
+
+			dataMap = {
+				taskId: taskData.taskId,
+				taskName: taskData.taskName, 
+				question: taskData.question,
+				labels: labelList,
+				authorized: req.session.user ? true : false,
+				user: req.session.user,
+			}
+
+			res.render('labelView', dataMap)
+		});
+})
+
+// Send a tweet for labeling
+app.get('/item', function(req, res) {
+
+	// Pull the task from the session
+	var requestedTask = req.session.taskId
+
+	console.log("New item requested!");
+
+	var localUser = req.session.user;
+	console.log("Local User:");
+	console.log(localUser);
+
+	// Get a set of candidate elements
+	db.all('SELECT elementId, elementText \
+		FROM elements e \
+		WHERE taskId = ? AND \
+		(SELECT COUNT(*) \
+			FROM elementLabels el \
+			WHERE el.elementId = e.elementId \
+			AND el.userId = ?) == 0 \
+	 	LIMIT 10', [requestedTask, localUser.userId])
+		.then(function(elements) {
+
+			if ( elements.length > 0 ) {
+				var targetElement = getRandomElement(elements);
+				console.log("Target Element: " + targetElement);
+				console.log("\t" + targetElement["elementId"]);
+				console.log("\t" + targetElement["elementText"]);
+
+				res.setHeader('Content-Type', 'application/json');
+				res.send(JSON.stringify(targetElement));
+			} else {
+				console.log("Done!");
+
+				res.setHeader('Content-Type', 'application/json');
+				res.send(JSON.stringify({ empty: true }));
+			}
+		});
+
+})
+
+// Receive a tweet label
+app.post('/item', function(req, res) {
+	console.log("Body: " + req.body);
+	console.log("\telement: " + req.body.element);
+	console.log("\tselected: " + req.body.selected);
+	console.log("\tUser ID: " + req.session.user.userId);
+
+	var elementId = req.body.element;
+	var userId = req.session.user.userId;
+	var decision = req.body.selected;
+
+	db.get('INSERT INTO elementLabels (elementId, userId, labelId) \
+		VALUES (:elementId, :userId, :decision)', [elementId, userId, decision])
+		.then(function() {
+			console.log("Decision logged...");
+			res.end();
 		});
 })
 
@@ -177,7 +282,7 @@ app.get('/pair', function(req, res) {
 
 	// Get a set of candidate elements
 	// db.all('SELECT elementId FROM pairChoices WHERE taskId = ? ORDER BY counter ASC LIMIT 10', requestedTask)
-	db.all('SELECT elementId FROM pairChoices WHERE taskId = ? LIMIT 100', requestedTask)
+	db.all('SELECT elementId FROM pairChoices WHERE taskId = ?', requestedTask)
 		.then(function(elements) {
 
 			var elementList = elements.map(function(x) {
@@ -198,7 +303,7 @@ app.get('/pair', function(req, res) {
 						WHERE cps.pairId = prs.pairId \
 							AND cps.userId = ? \
 				 	) = 0 \
-				 LIMIT 10', [targetElement, targetElement, localUser.id]);
+				 LIMIT 100', [targetElement, targetElement, localUser.userId]);
 		})
 		.then(function(pairs) {
 
@@ -255,10 +360,10 @@ app.post('/pair', function(req, res) {
 	console.log("Body: " + req.body);
 	console.log("\tpair: " + req.body.pair);
 	console.log("\tselected: " + req.body.selected);
-	console.log("\tUser ID: " + req.session.user.id);
+	console.log("\tUser ID: " + req.session.user.userId);
 
 	var pairId = req.body.pair;
-	var userId = req.session.user.id;
+	var userId = req.session.user.userId;
 	var decision = req.body.selected;
 
 	db.get('INSERT INTO comparisons (pairId, userId, decision) \

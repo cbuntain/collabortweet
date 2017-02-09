@@ -20,7 +20,12 @@ html
 
 						div(class="panel-heading") 
 							h4 
-								a(href="/pairView/" + v.taskId) Task #{v.taskId}: #{v.taskName}
+								if v.taskType == 1
+									a(href="/pairView/" + v.taskId) Task #{v.taskId}: #{v.taskName}
+								else if v.taskType == 2
+									a(href="/labelerView/" + v.taskId) Task #{v.taskId}: #{v.taskName}
+								else
+									p Unsupported Task #{v.taskId}: #{v.taskName}
 
 						div(class="panel-body")
 							p #{v.question}

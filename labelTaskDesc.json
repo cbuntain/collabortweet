@@ -1,0 +1,11 @@
+{
+	"name": "Nigeria 2015 - Relevance Labels",
+	"question": "Is this tweet relevant to the Nigerian 2015 election?",
+	"type": 2,
+	"labels": [
+		"Relevant",
+		"Not Relevant",
+		"Not English",
+		"Can't Decide"
+	]
+}

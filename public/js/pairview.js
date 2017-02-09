@@ -24,44 +24,58 @@ var loadTweets = function() {
 
 	$.get("/pair", function(json) {
 		tweetPair = json;
-		pairId = tweetPair.id;
 
-		$("#left-tweet-panel").text(tweetPair.left.tweet.text);
-		$("#right-tweet-panel").text(tweetPair.right.tweet.text);
+		if ( "empty" in tweetPair ) {
+			$("#loadingDialog").modal('hide');
 
-		
-		$(document).off("keypress").keypress(function(e) {
+			alert("You have no more elements in this task!");
+			console.log("You have no more elements in this task!");
 
-			switch(e.which) {
-				case 65:
-				case 97:
-					sendSelectedTweet(pairId, tweetPair.left.tweet.id);
-					break;
+			// turn off the keypress function
+			$(document).off("keypress");
 
-				case 66:
-				case 98:
-					sendSelectedTweet(pairId, tweetPair.right.tweet.id);
-					break;
+			// Turn off the click handler
+			$(this).off("click");
+		} else {
+			pairId = tweetPair.id;
 
-				case 67:
-				case 99:
-					sendSelectedTweet(pairId, -1);
-					break;
-			}
-		});
+			$("#left-tweet-panel").text(tweetPair.left.tweet.text);
+			$("#right-tweet-panel").text(tweetPair.right.tweet.text);
 
-		$("#left-tweet-button").off("click").click(function() {
-			sendSelectedTweet(pairId, tweetPair.left.tweet.id);
-		});
-		$("#right-tweet-button").off("click").click(function() {
-			sendSelectedTweet(pairId, tweetPair.right.tweet.id);
-		});
-		$("#undecided-button").off("click").click(function() {
-			sendSelectedTweet(pairId, -1);
-		});
+			
+			$(document).off("keypress").keypress(function(e) {
 
-		$("#loadingDialog").modal('hide');
-		console.log("Loaded pair...");
+				switch(e.which) {
+					case 65:
+					case 97:
+						sendSelectedTweet(pairId, tweetPair.left.tweet.id);
+						break;
+
+					case 66:
+					case 98:
+						sendSelectedTweet(pairId, tweetPair.right.tweet.id);
+						break;
+
+					case 67:
+					case 99:
+						sendSelectedTweet(pairId, -1);
+						break;
+				}
+			});
+
+			$("#left-tweet-button").off("click").click(function() {
+				sendSelectedTweet(pairId, tweetPair.left.tweet.id);
+			});
+			$("#right-tweet-button").off("click").click(function() {
+				sendSelectedTweet(pairId, tweetPair.right.tweet.id);
+			});
+			$("#undecided-button").off("click").click(function() {
+				sendSelectedTweet(pairId, -1);
+			});
+
+			$("#loadingDialog").modal('hide');
+			console.log("Loaded pair...");
+		}
 	})
 
 }

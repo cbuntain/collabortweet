@@ -55,7 +55,7 @@ with codecs.open(tweetPath, "r", "utf8") as inFile:
 conn = sqlite3.connect(sqlitePath)
 c = conn.cursor()
 
-c.execute("INSERT INTO tasks (taskName, question) VALUES (:name,:question)", 
+c.execute("INSERT INTO tasks (taskName, question, taskType) VALUES (:name,:question,:type)", 
 	taskDesc)
 taskId = c.lastrowid
 print "Task ID:", taskId
@@ -70,34 +70,50 @@ for elTup in elementList:
 
 print "Element Count:", len(elementIds)
 
-# Create the pairs
-pairList = None
+# Only create pairs if the task type == 1
+if ( taskDesc["type"] == 1 ):
+	# Create the pairs
+	pairList = None
 
-# If we didn't specify a number of pairs, find all
-if ( pairCount == None ):
-	pairList = itertools.combinations(elementIds, 2)
+	# If we didn't specify a number of pairs, find all
+	if ( pairCount == None ):
+		pairList = itertools.combinations(elementIds, 2)
 
-else: # Otherwise, randomly select k pairs
-	pairAccum = set()
+	else: # Otherwise, randomly select k pairs
+		pairAccum = set()
 
-	for eIndex in range(len(elementIds)):
-		eId = elementIds[eIndex]
-		startIndex = max(0, eIndex-1)
-		others = elementIds[:startIndex] + elementIds[eIndex+1:]
+		for eIndex in range(len(elementIds)):
+			eId = elementIds[eIndex]
+			startIndex = max(0, eIndex-1)
+			others = elementIds[:startIndex] + elementIds[eIndex+1:]
 
-		# Put the pair in canonical order to avoid duplicates
-		newPairs = set(map(lambda x: (min(eId, x), max(eId, x)), 
-			random.sample(others, pairCount)))
+			# Put the pair in canonical order to avoid duplicates
+			newPairs = set(map(lambda x: (min(eId, x), max(eId, x)), 
+				random.sample(others, pairCount)))
 
-		pairAccum = pairAccum.union(newPairs)
+			pairAccum = pairAccum.union(newPairs)
 
-	pairList = list(pairAccum)
+		pairList = list(pairAccum)
 
-pairList = [(taskId, x[0], x[1]) for x in pairList]
-print "Pair Count:", len(pairList)
+	pairList = [(taskId, x[0], x[1]) for x in pairList]
+	print "Pair Count:", len(pairList)
 
-c.executemany('INSERT INTO pairs (taskId, leftElement, rightElement) VALUES (?,?,?)', 
-	pairList)
+	c.executemany('INSERT INTO pairs (taskId, leftElement, rightElement) VALUES (?,?,?)', 
+		pairList)
+
+# If we are dealing with a labeling task (type == 2), insert the labels
+elif ( taskDesc["type"] == 2 ):
+
+	print "Insert labels..."
+	labelList = map(lambda x: {"taskId": taskId, "labelText": x}, taskDesc["labels"])
+	print labelList
+	
+	c.executemany('INSERT INTO labels (taskId, labelText) VALUES (:taskId,:labelText)', 
+		labelList)
+
+# Otherwise, we have an invalid task type
+else:
+	print "ERROR! Task type [" + taskDesc["type"] + "] is not valid!"
 
 conn.commit()
 conn.close()
