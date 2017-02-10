@@ -14,19 +14,33 @@ html
 		
 		//- Display options
 		div(class="container")
-			h2 Comparisons:
-			each v in compList
-				div(class="row")
-					div(class="panel panel-default")
+			if taskInfo.taskType == 1
+				h2 Comparisons:
+				each v in detailList
+					div(class="row")
+						div(class="panel panel-default")
 
-						div(class="panel-heading") 
-							h4 Selected #{v.decision}
+							div(class="panel-heading") 
+								h4 Selected #{v.decision}
 
-						div(class="panel-body")
-							h4 Item ID: #{v.lId}
-							p #{v.lText}
-							h4 Item ID: #{v.rId}
-							p #{v.rText}
+							div(class="panel-body")
+								h4 Item ID: #{v.lId}
+								p #{v.lText}
+								h4 Item ID: #{v.rId}
+								p #{v.rText}
+			
+			else if taskInfo.taskType == 2
+				h2 Labels:
+				each v in detailList
+					div(class="row")
+						div(class="panel panel-default")
+
+							div(class="panel-heading") 
+								pre= v.eText
+
+							div(class="panel-body")
+								h4 Label: #{v.lText}
+								h4 User: #{v.screenname}
 
 
 		include includes/jsFooter.pug

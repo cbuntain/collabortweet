@@ -86,11 +86,28 @@ app.get('/taskStats', function(req, res) {
 		FROM tasks t \
 			LEFT OUTER JOIN pairs p ON t.taskId = p.taskId \
 			LEFT OUTER JOIN comparisons c ON p.pairId = c.pairId \
+		WHERE t.taskType == 1 \
 		GROUP BY t.taskId \
 		ORDER BY t.taskId")
+		.then(function(pairTaskData) {
+
+			var labelTaskData = db.all("SELECT t.taskId, t.taskName, t.question, COUNT(e.elementId) AS eCount, COUNT(el.elementLabelId) AS labelCount \
+				FROM tasks t \
+					LEFT OUTER JOIN elements e ON t.taskId = e.taskId \
+					LEFT OUTER JOIN elementLabels el ON e.elementId = el.elementId \
+				WHERE t.taskType == 2 \
+				GROUP BY t.taskId \
+				ORDER BY t.taskId");
+
+			return Promise.all([
+				pairTaskData,
+				labelTaskData
+			]);
+		})
 		.then(function(taskData) {
 			dataMap = {
-				tasks: taskData
+				pairTasks: taskData[0],
+				labelTasks: taskData[1]
 			}
 
 			res.render('taskStats', dataMap)
@@ -101,24 +118,51 @@ app.get('/taskStats', function(req, res) {
 app.get('/taskStats/:taskId', function(req, res) {
 	var taskId = req.params.taskId
 
-	Promise.all([
-		db.get("SELECT taskName, question FROM tasks WHERE taskId = ?", taskId),
-		db.all("SELECT c.decision, \
-				e1.elementId AS lId, e1.elementText AS lText, e1.externalId AS lExt, \
-				e2.elementId AS rId, e2.elementText AS rText, e2.externalId AS rExt \
-			FROM pairs p \
-				JOIN elements AS e1 ON e1.elementId = p.leftElement \
-				JOIN elements AS e2 ON e2.elementId = p.rightElement \
-				JOIN comparisons c ON p.pairId = c.pairId \
-			WHERE p.taskId = ?", taskId)])
+	db.get("SELECT taskName, question, taskType FROM tasks WHERE taskId = ?", taskId)
+		.then(function(taskData) {
+
+			var taskDetails = [taskData];
+
+			if ( taskData.taskType == 1 ) {
+
+				var compDetails = db.all("SELECT c.decision, \
+						e1.elementId AS lId, e1.elementText AS lText, e1.externalId AS lExt, \
+						e2.elementId AS rId, e2.elementText AS rText, e2.externalId AS rExt \
+					FROM pairs p \
+						JOIN elements AS e1 ON e1.elementId = p.leftElement \
+						JOIN elements AS e2 ON e2.elementId = p.rightElement \
+						JOIN comparisons c ON p.pairId = c.pairId \
+					WHERE p.taskId = ?", taskId);
+
+				taskDetails.push(compDetails);
+
+			} else if ( taskData.taskType == 2 ) {
+
+				var labelDetails = db.all("SELECT e.elementText AS eText, u.screenname AS screenname, l.labelText AS lText \
+					FROM elements e \
+						JOIN elementLabels el ON e.elementId = el.elementId \
+						JOIN labels l ON el.labelId = l.labelId \
+						JOIN users u ON u.userId = el.userId \
+					WHERE e.taskId = ? \
+					ORDER BY e.elementId", taskId);
+
+				taskDetails.push(labelDetails);
+
+			} else {
+				console.log("Unknown task type in taskStats/...");
+				taskDetails.push({ empty : true });
+			}
+
+			return Promise.all(taskDetails);
+		})
 		.then(function(taskInfoArray) {
 
 			var taskInfo = taskInfoArray[0];
-			var comps = taskInfoArray[1];
+			var taskDetails = taskInfoArray[1];
 
 			dataMap = {
 				taskInfo: taskInfo,
-				compList: comps,
+				detailList: taskDetails,
 			}
 
 			res.render('taskStats-detail', dataMap)
