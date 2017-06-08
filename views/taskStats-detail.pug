@@ -14,6 +14,16 @@ html
 		
 		//- Display options
 		div(class="container")
+			h2 User Label Counts:
+			div(class="row")
+				div(class="panel panel-default")
+
+					div(class="panel-body")
+						each ud in userDetails
+							h4 #{ud.fname} #{ud.lname}: #{ud.count}
+
+		//- Display options
+		div(class="container")
 			if taskInfo.taskType == 1
 				h2 Comparisons:
 				each v in detailList

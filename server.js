@@ -91,7 +91,7 @@ app.get('/taskStats', function(req, res) {
 		ORDER BY t.taskId")
 		.then(function(pairTaskData) {
 
-			var labelTaskData = db.all("SELECT t.taskId, t.taskName, t.question, COUNT(e.elementId) AS eCount, COUNT(el.elementLabelId) AS labelCount \
+			var labelTaskData = db.all("SELECT t.taskId, t.taskName, t.question, COUNT(DISTINCT(e.elementId)) AS eCount, COUNT(el.elementLabelId) AS labelCount \
 				FROM tasks t \
 					LEFT OUTER JOIN elements e ON t.taskId = e.taskId \
 					LEFT OUTER JOIN elementLabels el ON e.elementId = el.elementId \
@@ -135,6 +135,15 @@ app.get('/taskStats/:taskId', function(req, res) {
 					WHERE p.taskId = ?", taskId);
 
 				taskDetails.push(compDetails);
+              
+              // Get the users who have labeled this task
+              var userLabelDetails = db.all("SELECT u.fname AS fname, u.lname AS lname, COUNT(*) as count \
+                    FROM users u \
+                        JOIN comparisons c ON u.userId=c.userId \
+                        JOIN pairs p ON p.pairId=c.pairId \
+                    WHERE p.taskId = ? \
+                    GROUP BY u.userId", taskId);
+              taskDetails.push(userLabelDetails);
 
 			} else if ( taskData.taskType == 2 ) {
 
@@ -147,6 +156,15 @@ app.get('/taskStats/:taskId', function(req, res) {
 					ORDER BY e.elementId", taskId);
 
 				taskDetails.push(labelDetails);
+              
+              // Get the users who have labeled this task
+              var userLabelDetails = db.all("SELECT u.fname AS fname, u.lname AS lname, COUNT(*) AS count \
+                    FROM users u \
+                        JOIN elementLabels el ON u.userId=el.userId \
+                        JOIN elements e ON el.elementId=e.elementId \
+                    WHERE e.taskId = ? \
+                    GROUP BY u.userId", taskId);
+              taskDetails.push(userLabelDetails);
 
 			} else {
 				console.log("Unknown task type in taskStats/...");
@@ -157,12 +175,14 @@ app.get('/taskStats/:taskId', function(req, res) {
 		})
 		.then(function(taskInfoArray) {
 
-			var taskInfo = taskInfoArray[0];
-			var taskDetails = taskInfoArray[1];
+              var taskInfo = taskInfoArray[0];
+              var taskDetails = taskInfoArray[1];
+              var userDetails = taskInfoArray[2];
 
 			dataMap = {
-				taskInfo: taskInfo,
-				detailList: taskDetails,
+              taskInfo: taskInfo,
+              detailList: taskDetails,
+              userDetails: userDetails,
 			}
 
 			res.render('taskStats-detail', dataMap)
