@@ -5,7 +5,10 @@ import org.graphstream.graph.Graph;
 import org.graphstream.graph.Node;
 import org.graphstream.graph.implementations.Graphs;
 import org.graphstream.graph.implementations.SingleGraph;
-import org.graphstream.stream.file.*;
+import org.graphstream.stream.file.FileSink;
+import org.graphstream.stream.file.FileSinkGEXF2;
+import org.graphstream.stream.file.FileSource;
+import org.graphstream.stream.file.FileSourceGEXF;
 
 import java.io.IOException;
 import java.util.*;
@@ -18,8 +21,6 @@ import java.util.stream.Collectors;
 public class RemoveCyclesDFS {
 
     public static void main(String[] args) {
-
-        int iterCount = Integer.parseInt(args[2]);
 
         Graph g = new SingleGraph("PairGraph");
         FileSource fs = new FileSourceGEXF();
@@ -40,33 +41,48 @@ public class RemoveCyclesDFS {
             fs.removeSink(g);
         }
 
+//        g.display(true);
+
+//        EdgeTuple x = new EdgeTuple("123", "456");
+//        System.out.println(x);
+//        System.out.println(x.getId());
+//        System.out.println(x.hashCode());
+//        EdgeTuple y = new EdgeTuple("123", "456");
+//        System.out.println(y);
+//        System.out.println(y.getId());
+//        System.out.println(y.hashCode());
+//
+//        System.out.println("Equals: " + x.equals(y));
+//
+//        Set<EdgeTuple> m = new HashSet<>();
+//        System.out.println("After INIT:");
+//        m.forEach(et -> System.out.println(et));
+//        m.add(x);
+//        System.out.println("After X:");
+//        m.forEach(et -> System.out.println(et));
+//        m.add(y);
+//        System.out.println("After Y:");
+//        m.forEach(et -> System.out.println(et));
+//        System.exit(1);
+
         System.out.println(String.format("Node Count: %d", g.getNodeCount()));
         System.out.println(String.format("Edge Count: %d", g.getEdgeCount()));
 
         // How many edges did we originally have
         int origEdgeCount = g.getEdgeCount();
 
-        Graph minGraph = null;
-        int minArcSetSize = Integer.MAX_VALUE;
-        for ( int i=0; i<iterCount; i++ ) {
-            Graph acyclic = createAcyclicGraph(g);
+        Graph acyclic = createAcyclicGraph(g);
 
-            System.out.println(String.format("Node Count: %d", acyclic.getNodeCount()));
-            System.out.println(String.format("Edge Count: %d", acyclic.getEdgeCount()));
+        System.out.println(String.format("Node Count: %d", acyclic.getNodeCount()));
+        System.out.println(String.format("Edge Count: %d", acyclic.getEdgeCount()));
 
-            int thisEdgeCount = acyclic.getEdgeCount();
+        int thisEdgeCount = acyclic.getEdgeCount();
 
-            int thisFASSize = origEdgeCount - thisEdgeCount;
+        int thisFASSize = origEdgeCount - thisEdgeCount;
 
-            System.out.println("Feedback Arc Set Size: " + thisFASSize);
+        System.out.println("Feedback Arc Set Size: " + thisFASSize);
 
-            if ( thisFASSize < minArcSetSize ) {
-                minGraph = acyclic;
-                minArcSetSize = thisFASSize;
-            }
-        }
-
-        System.out.println("Minimum FAS Size: " + minArcSetSize);
+        System.out.println("Minimum FAS Size: " + thisFASSize);
 
         FileSink outSink = new FileSinkGEXF2();
 
@@ -75,7 +91,7 @@ public class RemoveCyclesDFS {
 
             System.out.println(String.format("Writing to File: %s", outPath));
 
-            outSink.writeAll(minGraph, outPath);
+            outSink.writeAll(acyclic, outPath);
 
             System.out.println("Write successful.");
         } catch( IOException e) {
@@ -85,122 +101,106 @@ public class RemoveCyclesDFS {
         }
     }
 
-    public static Graph createAcyclicGraph(Graph originalG) {
+    public static Graph createAcyclicGraph(Graph g) {
 
-        // Implement the BergerShorFAS algorithm as described in
-        // M. Simpson, V. Srinivasan, and A. Thomo,
-        // “Efficient Computation of Feedback Arc Set at Web-scale,”
-        // Proc. VLDB Endow., vol. 10, no. 3, pp. 133–144, Nov. 2016.
+        // Find a maximal acyclic arc set from each node
+//        List<List<EdgeTuple>> arcSets = g.getNodeSet().stream().map(node -> {
+//            Set<String> originSet = new HashSet<String>();
+//            originSet.add(node.getId());
+//
+//            return recursiveDfs(node, originSet, 0);
+//        }).collect(Collectors.toList());
+        List<Set<EdgeTuple>> arcSets = new ArrayList<>();
+        for ( Node node : g.getNodeSet() ) {
+            Set<String> originSet = new HashSet<>();
+            originSet.add(node.getId());
 
-        // Clone the graph, so edge deletion is non-destructive
-        Graph g = Graphs.clone(originalG);
+            Set<EdgeTuple> badEdges = recursiveDfs(node, originSet, 0);
+            arcSets.add(badEdges);
 
-        // Shuffle the list
-        List<Node> nodeList = new ArrayList<Node>(g.getNodeSet());
-        Collections.shuffle(nodeList);
-
-        // For each node in the list, keep either the incoming or outgoing edges,
-        //  whichever is the larger set
-        Set<EdgeTuple> keptEdges = new HashSet<>();
-
-        // Track nodes we've visited
-        List<String> visited = new ArrayList<>();
-
-        // Iterate through the nodes
-        for ( Node n : nodeList ) {
-            Collection<Edge> outgoingEdges = n.getLeavingEdgeSet();
-            outgoingEdges.removeIf(e -> e == null);
-
-            Collection<Edge> incomingEdges = n.getEnteringEdgeSet();
-            incomingEdges.removeIf(e -> e == null);
-
-            int outgoingEdgeCount = outgoingEdges.size();
-            int incomingEdgeCount = incomingEdges.size();
-
-            // Check if we someone retouch a node we've visited before
-            List<String> adj = new ArrayList<>();
-            adj.addAll(outgoingEdges.stream().map(e -> e.getTargetNode().getId()).collect(Collectors.toList()));
-            adj.addAll(incomingEdges.stream().map(e -> e.getSourceNode().getId()).collect(Collectors.toList()));
-            List<String> tmpVis = new ArrayList<>(visited);
-            tmpVis.retainAll(adj);
-
-            if ( tmpVis.size() > 0) {
-                System.out.println("ERROR. Edges should have been deleted");
-                System.exit(-1);
-            }
-
-            // Keep the largest set of directions
-            if ( incomingEdgeCount > outgoingEdgeCount ) {    // Keep incoming edges
-
-                keptEdges.addAll(incomingEdges.
-                        parallelStream().
-                        map(e -> new EdgeTuple(e.getSourceNode().getId(), e.getTargetNode().getId()))
-                            .collect(Collectors.toSet()));
-
-            } else { // Keep outgoing edges
-
-                keptEdges.addAll(outgoingEdges.
-                        parallelStream().
-                        map(e -> new EdgeTuple(e.getSourceNode().getId(), e.getTargetNode().getId()))
-                        .collect(Collectors.toSet()));
-            }
-
-            // Mark this ID as visited
-            visited.add(n.getId());
-
-            // Remove all edges from the graph
-            g.removeNode(n);
+            System.out.println("Does node [" + node + "] Have cycles: " + badEdges.size());
+            badEdges.forEach(et -> System.out.println(et));
         }
+
+        // Find the min set size
+        int minSetSize = Integer.MAX_VALUE;
+        Set<EdgeTuple> minArcSet = null;
+        for ( Set<EdgeTuple> acyclicArcSet : arcSets ) {
+            int setSize = acyclicArcSet.size();
+            if ( setSize < minSetSize ) {
+                minSetSize = setSize;
+                minArcSet = acyclicArcSet;
+            }
+        }
+
+        System.out.println("Minimum Feedback Arc Set Size: " + minSetSize);
 
         // Create a new graph with no error checking and activated auto-node-creation
         Graph acyclicGraph = new SingleGraph("Acyclic", false, true);
-        for ( EdgeTuple e : keptEdges ) {
-            String sourceId = e.left;
-            String destId = e.right;
-            String edgeId = String.format("%s->%s", sourceId, destId);
-
-            acyclicGraph.addEdge(edgeId, sourceId, destId, true);
-        }
+//        for ( EdgeTuple e : maxArcSet ) {
+//            String sourceId = e.getLeftId();
+//            String destId = e.getRightId();
+//            String edgeId = String.format("%s->%s", sourceId, destId);
+//
+//            acyclicGraph.addEdge(edgeId, sourceId, destId, true);
+//        }
 
         return acyclicGraph;
     }
 
-    private static class EdgeTuple implements Comparable<EdgeTuple> {
-        private String left;
-        private String right;
+    private static Set<EdgeTuple> recursiveDfs(Node origin, Set<String> visited, int depth) {
 
-        public EdgeTuple(String l, String r) {
-            left = l;
-            right = r;
+//        for ( int i=0; i<depth; i++ ) {
+//            System.out.print("\t");
+//        }
+//        System.out.println("Depth: " + depth + ", Starting from node: " + origin.toString());
+
+        List<Edge> outgoingEdges = origin.getLeavingEdgeSet().stream().
+                filter(e -> !visited.contains(e.getTargetNode().getId())).collect(Collectors.toList());
+
+        if ( outgoingEdges.size() == 0 ) {
+            return new HashSet<>();
         }
 
-        public EdgeTuple(Edge e) {
-            left = e.getSourceNode().getId();
-            right = e.getTargetNode().getId();
+        List<Set<EdgeTuple>> badEdgeList = new ArrayList<>();
+        for ( Edge e : origin.getLeavingEdgeSet() ) {
+            Set<EdgeTuple> badEdges = new HashSet<>();
+
+            Node target = e.getTargetNode();
+
+            // If we have not visited this node before, keep this edge, and
+            //  traverse this node
+            if ( !visited.contains(target.getId()) ) {
+
+                Set<String> localVisited = new HashSet<>(visited);
+                localVisited.add(target.getId());
+
+                // Add all further bad edges
+                badEdges.addAll(recursiveDfs(target, localVisited, depth + 1));
+            } else {
+//                System.out.println("Edge Would Have Induced Cycle: " + e.toString());
+                badEdges.add(new EdgeTuple(e));
+            }
+
+            badEdgeList.add(badEdges);
         }
 
-        public String getId() {
-            return String.format("%s->%s", left, right);
+        int minBadEdgeCount = Integer.MAX_VALUE;
+        Set<EdgeTuple> minBadEdges = null;
+        for ( Set<EdgeTuple> cycleEdges : badEdgeList ) {
+            int localDelCount = cycleEdges.size();
+
+            if ( localDelCount == 0 ) {
+                continue;
+            }
+
+            if ( localDelCount < minBadEdgeCount ) {
+                minBadEdgeCount = localDelCount;
+                minBadEdges = cycleEdges;
+            }
         }
 
-        @Override
-        public String toString() {
-            return this.getId();
-        }
-
-        @Override
-        public int compareTo(EdgeTuple o) {
-            return this.getId().compareTo(o.getId());
-        }
-
-        @Override
-        public int hashCode() {
-            return this.getId().hashCode();
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            return o.getClass().isInstance(this.getClass()) ? o.hashCode() == this.hashCode() : false;
-        }
+        return minBadEdges;
     }
+
 }
