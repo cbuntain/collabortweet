@@ -114,6 +114,109 @@ app.get('/taskStats', function(req, res) {
 		});
 })
 
+var calculateAgreement = function(taskInfo, taskDetails, userDetails) {
+    // Agreement statistics
+    var agreementStats = {
+        user1: null,
+        user2: null,
+        agreeCount: 0,
+        agreement: null,
+    }
+    
+    // For now, stats for labeling makes sense
+    if ( taskInfo.taskType == 2 ) {
+        
+        var userCounts = userDetails.map(function(currentValue, index, array) {
+                return {
+                         uId: currentValue.uId,
+                         count: currentValue.count,
+                         fname: currentValue.fname,
+                         lname: currentValue.lname
+                        }
+             }).sort(function(l, r) {
+                     // want to compare the second array element, and we want
+                     //  to sort in decreasing order
+                     return r.count - l.count;
+             });
+        
+        // If we have more than 1 user, get the first two
+        if ( userCounts.length > 1 ) {
+            var user1 = userCounts[0];
+            var user2 = userCounts[1];
+            
+            var leftLabels = taskDetails.filter(function(currentValue, index, array){
+                                                return currentValue.uId == user1.uId;
+                                                });
+            var rightLabels = taskDetails.filter(function(currentValue, index, array){
+                                                 return currentValue.uId == user2.uId;
+                                                 });
+            
+            // Create a map of labels
+            var labelMap = {};
+            taskDetails.forEach(function(element) {
+                                    if ( !(element.lId in labelMap) ) {
+                                        labelMap[element.lId] = 1;
+                                    } else {
+                                        labelMap[element.lId] = labelMap[element.lId] + 1;
+                                    }
+                                });
+            var uniqueLabels = Object.keys(labelMap);
+            
+            // Create a map of elements
+            var elementMap = {};
+            leftLabels.forEach(function(cv){
+                               elementMap[cv.eId] = {left: cv, right: null};
+                               });
+            rightLabels.forEach(function(cv){
+                                if ( !(cv.eId in elementMap) ) {
+                                    elementMap[cv.eId] = {left: null, right: cv};
+                                } else {
+                                    elementMap[cv.eId].right = cv;
+                                }
+                               });
+            
+            // Shared ids
+            var labelOverlap = [];
+            for ( elementId in elementMap ) {
+                var cv = elementMap[elementId];
+                if ( cv.left != null && cv.right != null ) {
+                    labelOverlap.push(elementId);
+                }
+            }
+            
+            var sharedLabelCount = labelOverlap.length;
+            var agreedLabels = labelOverlap.filter(function(elementId) {
+                                                   var cv = elementMap[elementId];
+                                                   return cv.left.lId == cv.right.lId;
+                                                   });
+            var agreedLabelCount = agreedLabels.length;
+            
+            // Calculate agreement
+            var nkSum = 0;
+            uniqueLabels.forEach(function(label) {
+                                 // Calculate nk1 * nk2
+                                 nk1 = rightLabels.filter(function(cv){
+                                                          return (cv.eId in labelOverlap) && cv.lId == label }).length;
+                                 nk2 = leftLabels.filter(function(cv){
+                                                         return (cv.eId in labelOverlap) && cv.lId == label }).length;
+                                 
+                                 nkSum = nkSum + (nk1 * nk2);
+                                 });
+            var pSubE = nkSum / (sharedLabelCount * sharedLabelCount);
+            var pSubO = agreedLabelCount / sharedLabelCount;
+            var kappa = 1 - (1 - pSubO) / (1 - pSubE);
+            
+            // Update user stats
+            agreementStats.user1 = user1;
+            agreementStats.user2 = user2;
+            agreementStats.agreeCount = sharedLabelCount;
+            agreementStats.agreement = kappa;
+        }
+    }
+    
+    return agreementStats;
+}
+
 // Detailed view for a given task
 app.get('/taskStats/:taskId', function(req, res) {
 	var taskId = req.params.taskId
@@ -147,7 +250,7 @@ app.get('/taskStats/:taskId', function(req, res) {
 
 			} else if ( taskData.taskType == 2 ) {
 
-				var labelDetails = db.all("SELECT e.elementText AS eText, u.screenname AS screenname, l.labelText AS lText \
+				var labelDetails = db.all("SELECT e.elementId AS eId, e.elementText AS eText, u.userId AS uId, u.screenname AS screenname, l.labelId AS lId, l.labelText AS lText \
 					FROM elements e \
 						JOIN elementLabels el ON e.elementId = el.elementId \
 						JOIN labels l ON el.labelId = l.labelId \
@@ -158,7 +261,7 @@ app.get('/taskStats/:taskId', function(req, res) {
 				taskDetails.push(labelDetails);
               
               // Get the users who have labeled this task
-              var userLabelDetails = db.all("SELECT u.fname AS fname, u.lname AS lname, COUNT(*) AS count \
+              var userLabelDetails = db.all("SELECT u.userId AS uId, u.fname AS fname, u.lname AS lname, COUNT(*) AS count \
                     FROM users u \
                         JOIN elementLabels el ON u.userId=el.userId \
                         JOIN elements e ON el.elementId=e.elementId \
@@ -178,14 +281,18 @@ app.get('/taskStats/:taskId', function(req, res) {
               var taskInfo = taskInfoArray[0];
               var taskDetails = taskInfoArray[1];
               var userDetails = taskInfoArray[2];
-
-			dataMap = {
+              
+              // Calculate the agreement or quality of labels
+              var agreementStats = calculateAgreement(taskInfo, taskDetails, userDetails);
+              
+              dataMap = {
               taskInfo: taskInfo,
               detailList: taskDetails,
               userDetails: userDetails,
-			}
+              agreement: agreementStats,
+              }
 
-			res.render('taskStats-detail', dataMap)
+              res.render('taskStats-detail', dataMap);
 		});
 })
 

@@ -22,6 +22,20 @@ html
 						each ud in userDetails
 							h4 #{ud.fname} #{ud.lname}: #{ud.count}
 
+		if agreement.user1 != null
+			//- Display options
+			div(class="container")
+				h2 Agreement Statistics:
+				div(class="row")
+					div(class="panel panel-default")
+
+						div(class="panel-body")
+							h4 Top Agreed users:
+							h5 #{agreement.user1.fname} #{agreement.user1.lname}
+							h5 #{agreement.user2.fname} #{agreement.user2.lname}
+							h4 Overlapped Elements: #{agreement.agreeCount}
+							h4 Cohen's Kappa: #{agreement.agreement}
+
 		//- Display options
 		div(class="container")
 			if taskInfo.taskType == 1
