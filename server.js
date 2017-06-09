@@ -119,6 +119,7 @@ var calculateAgreement = function(taskInfo, taskDetails, userDetails) {
     var agreementStats = {
         user1: null,
         user2: null,
+        overlapCount: 0,
         agreeCount: 0,
         agreement: null,
     }
@@ -195,10 +196,14 @@ var calculateAgreement = function(taskInfo, taskDetails, userDetails) {
             var nkSum = 0;
             uniqueLabels.forEach(function(label) {
                                  // Calculate nk1 * nk2
-                                 nk1 = rightLabels.filter(function(cv){
-                                                          return (cv.eId in labelOverlap) && cv.lId == label }).length;
-                                 nk2 = leftLabels.filter(function(cv){
-                                                         return (cv.eId in labelOverlap) && cv.lId == label }).length;
+                                 nk1 = labelOverlap.filter(function(elementId){
+                                                           var cv = elementMap[elementId];
+                                                           return cv.right.lId == label;
+                                                           }).length;
+                                 nk2 = labelOverlap.filter(function(elementId){
+                                                           var cv = elementMap[elementId];
+                                                           return cv.left.lId == label;
+                                                           }).length;
                                  
                                  nkSum = nkSum + (nk1 * nk2);
                                  });
@@ -209,7 +214,8 @@ var calculateAgreement = function(taskInfo, taskDetails, userDetails) {
             // Update user stats
             agreementStats.user1 = user1;
             agreementStats.user2 = user2;
-            agreementStats.agreeCount = sharedLabelCount;
+            agreementStats.agreeCount = agreedLabelCount;
+            agreementStats.overlapCount = sharedLabelCount;
             agreementStats.agreement = kappa;
         }
     }
