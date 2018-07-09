@@ -12,7 +12,8 @@
     "fs-promise": "^1.0.0",
     "passport": "^0.3.2",
     "pug": "^2.0.0-beta6",
-    "sqlite": "^2.2.4"
+    "sqlite": "^2.2.4",
+    "sqlite3": "3.1.8"
   },
   "devDependencies": {
     "babel-cli": "^6.18.0"
