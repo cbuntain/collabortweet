@@ -40,7 +40,7 @@ var loadDataElements = function() {
 		} else {
 			console.log("Acquired element...");
 
-			$("#element-content-panel").text(dataElement.elementText);
+			$("#element-content-panel").html(dataElement.elementText);
 
 			// turn off the keypress function
 			$(document).off("keypress");
