@@ -230,7 +230,9 @@ app.get('/taskStats/:taskId', function(req, res) {
 	db.get("SELECT taskName, question, taskType FROM tasks WHERE taskId = ?", taskId)
 		.then(function(taskData) {
 
-			var taskDetails = [taskData];
+			var taskDetails = {
+                taskInfo: taskData
+            };
 
 			if ( taskData.taskType == 1 ) {
 
@@ -243,7 +245,7 @@ app.get('/taskStats/:taskId', function(req, res) {
 						JOIN comparisons c ON p.pairId = c.pairId \
 					WHERE p.taskId = ?", taskId);
 
-				taskDetails.push(compDetails);
+				taskDetails["labels"] = compDetails;
               
               // Get the users who have labeled this task
               var userLabelDetails = db.all("SELECT u.fname AS fname, u.lname AS lname, COUNT(*) as count \
@@ -252,19 +254,30 @@ app.get('/taskStats/:taskId', function(req, res) {
                         JOIN pairs p ON p.pairId=c.pairId \
                     WHERE p.taskId = ? \
                     GROUP BY u.userId", taskId);
-              taskDetails.push(userLabelDetails);
+
+              taskDetails["userDetails"] = userLabelDetails;
+
+              // Pairwise comparisons don't have label options, so null this
+              taskDetails["labelOptions"] = null;
 
 			} else if ( taskData.taskType == 2 ) {
 
-				var labelDetails = db.all("SELECT e.elementId AS eId, e.elementText AS eText, u.userId AS uId, u.screenname AS screenname, l.labelId AS lId, l.labelText AS lText \
-					FROM elements e \
-						JOIN elementLabels el ON e.elementId = el.elementId \
-						JOIN labels l ON el.labelId = l.labelId \
-						JOIN users u ON u.userId = el.userId \
-					WHERE e.taskId = ? \
-					ORDER BY e.elementId", taskId);
+                var labelOptions = db.all("SELECT l.labelId AS lId, l.labelText AS lText \
+                    FROM labels l \
+                    WHERE l.taskId = ? \
+                    ORDER BY l.taskId", taskId);
 
-				taskDetails.push(labelDetails);
+                taskDetails["labelOptions"] = labelOptions;
+
+                var labelDetails = db.all("SELECT e.elementId AS eId, e.elementText AS eText, el.elementLabelId AS elId, u.userId AS uId, u.screenname AS screenname, l.labelId AS lId, l.labelText AS lText \
+                    FROM elements e \
+                        JOIN elementLabels el ON e.elementId = el.elementId \
+                        JOIN labels l ON el.labelId = l.labelId \
+                        JOIN users u ON u.userId = el.userId \
+                    WHERE e.taskId = ? \
+                    ORDER BY e.elementId", taskId);
+
+                taskDetails["labels"] = labelDetails;
               
               // Get the users who have labeled this task
               var userLabelDetails = db.all("SELECT u.userId AS uId, u.fname AS fname, u.lname AS lname, COUNT(*) AS count \
@@ -273,29 +286,32 @@ app.get('/taskStats/:taskId', function(req, res) {
                         JOIN elements e ON el.elementId=e.elementId \
                     WHERE e.taskId = ? \
                     GROUP BY u.userId", taskId);
-              taskDetails.push(userLabelDetails);
+
+              taskDetails["userDetails"] = userLabelDetails;
 
 			} else {
 				console.log("Unknown task type in taskStats/...");
 				taskDetails.push({ empty : true });
 			}
 
-			return Promise.all(taskDetails);
+			return Promise.props(taskDetails);
 		})
-		.then(function(taskInfoArray) {
+		.then(function(taskInfoMap) {
 
-              var taskInfo = taskInfoArray[0];
-              var taskDetails = taskInfoArray[1];
-              var userDetails = taskInfoArray[2];
+              var taskInfo = taskInfoMap["taskInfo"];
+              var taskDetails = taskInfoMap["labels"];
+              var labelDetails = taskInfoMap["labelOptions"];
+              var userDetails = taskInfoMap["userDetails"];
               
               // Calculate the agreement or quality of labels
               var agreementStats = calculateAgreement(taskInfo, taskDetails, userDetails);
               
               dataMap = {
-              taskInfo: taskInfo,
-              detailList: taskDetails,
-              userDetails: userDetails,
-              agreement: agreementStats,
+                  taskInfo: taskInfo,
+                  detailList: taskDetails,
+                  userDetails: userDetails,
+                  agreement: agreementStats,
+                  labelDetails: labelDetails
               }
 
               res.render('taskStats-detail', dataMap);
@@ -547,6 +563,27 @@ app.post('/pair', function(req, res) {
 			console.log("Decision logged...");
 			res.end();
 		});
+})
+
+// Receive an updated tweet label
+app.post('/updateLabel', function(req, res) {
+    console.log("Body: " + req.body);
+    console.log("\tNew Label ID: " + req.body.newLabelId);
+    console.log("\tElement Label ID: " + req.body.elementLabelId);
+
+    // For now, we don't need the user id...
+    // console.log("\tUser ID: " + req.session.user.userId);
+    // var userId = req.session.user.userId;
+
+    var elementLabelId = req.body.elementLabelId;
+    var decision = req.body.newLabelId;
+
+    db.get('UPDATE elementLabels SET labelId = :decision WHERE elementLabelId = :elementLabelId', 
+        [decision, elementLabelId])
+        .then(function() {
+            console.log("Update logged...");
+            res.end();
+        });
 })
 
 // Start the server up

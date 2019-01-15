@@ -1,7 +1,7 @@
 {
   "name": "pairwise-comparator",
-  "version": "1.0.0",
-  "description": "Pairwise comparison framework",
+  "version": "1.1.0",
+  "description": "Annotation and pairwise comparison framework",
   "main": "server.js",
   "dependencies": {
     "bluebird": "^3.4.7",
@@ -22,6 +22,6 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js"
   },
-  "author": "cbuntain@cs.umd.edu",
+  "author": "cody@bunta.in",
   "license": "MIT"
 }

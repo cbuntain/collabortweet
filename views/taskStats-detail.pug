@@ -63,8 +63,19 @@ html
 								div !{v.eText}
 
 							div(class="panel-body")
-								h4 Label: #{v.lText}
 								h4 User: #{v.screenname}
+								form(id="update-label-"+v.elId, class="update-label", elementlabelid=v.elId)
+									select
+										each opt in labelDetails
+											if v.lId == opt.lId
+												option(value=opt.lId, selected="true") #{opt.lText}
+											else
+												option(value=opt.lId) #{opt.lText}
+									br
+									input(class="btn btn-primary btn-sm", type="button", value="Update")
 
 
 		include includes/jsFooter.pug
+
+		<!-- Script for running the pair viewport -->
+		script(src="/static/js/taskStats-detail.js")
