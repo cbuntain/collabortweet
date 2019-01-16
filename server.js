@@ -305,6 +305,7 @@ app.get('/taskStats/:taskId', function(req, res) {
               
               // Calculate the agreement or quality of labels
               var agreementStats = calculateAgreement(taskInfo, taskDetails, userDetails);
+              // iterate through taskDetails only keep the ones where user id = req.session.user.id
               
               dataMap = {
                   taskInfo: taskInfo,
