@@ -13,7 +13,7 @@ var session = require('express-session')(
 		cookie: { secure: false }
 	});
 
-var dbFile = 'pairComp.sqlite3'
+var dbFile = 'clinton_ug_experiment.sqlite3'
 
 var app = express()
 
@@ -305,11 +305,18 @@ app.get('/taskStats/:taskId', function(req, res) {
               
               // Calculate the agreement or quality of labels
               var agreementStats = calculateAgreement(taskInfo, taskDetails, userDetails);
-              // iterate through taskDetails only keep the ones where user id = req.session.user.id
-              
+              // Added by Fridolin Linder to avoid UGs beign able to see other labelers annotations when
+              // correcting their own.
+              // Iterate through taskDetails only keep the ones where user id = req.session.user.id
+              var current_user_id = req.session.user.userId
+	      var new_task_details = taskDetails.filter(function (el) {
+		  return el.uId == current_user_id;
+	      });
+
               dataMap = {
                   taskInfo: taskInfo,
-                  detailList: taskDetails,
+                  //detailList: taskDetails,
+                  detailList: new_task_details,
                   userDetails: userDetails,
                   agreement: agreementStats,
                   labelDetails: labelDetails
@@ -597,7 +604,7 @@ Promise.resolve()
 
 	// Now, with the DB successfully started, start the server
 	.finally(() => {
-		app.listen(3000, function () {
+		app.listen(4000, function () {
 			console.log('Starting server...')
 		})
 	})
