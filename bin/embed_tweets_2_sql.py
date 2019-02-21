@@ -27,11 +27,12 @@ import itertools
 import random
 import requests
 
+
 # ==============================================================================
 # Function definitions
 # ==============================================================================
 
-def get_embed(username, tweet_id, default="<pre></pre>"):
+def get_embed(username, tweet_id):
     '''Use Twitter's embed API endpoint to get the HTML for a tweet
 
     Arguments:
@@ -51,7 +52,7 @@ def get_embed(username, tweet_id, default="<pre></pre>"):
     }
     req = requests.get('https://publish.twitter.com/oembed', params=payload)
 
-    rendered_html = default
+    rendered_html = None
 
     # Try to get the HTML from Twitter's oEmbed API.
     #. we check if we get 200 Status OK code and if the "HTML" key is
@@ -69,9 +70,85 @@ def get_embed(username, tweet_id, default="<pre></pre>"):
         print("Error on getting tweet:", tweet_id)
         print("Response Code:", req.status_code)
         print("Response:", req.text)
+
     return rendered_html
 
-# Get the contents of this tweet
+
+def get_tweet_content(tweet):
+    '''Get the relevant content of a tweet to be displayed to the labeler.
+
+    The content returned depends on the tweet type (see Returns section).
+
+    Arguments:
+    ----------
+    tweet, dict Tweet object (for now in Twitter format only. TODO: make work with GNIP)
+
+    Returns:
+    ----------
+    dict:
+       {'type': ['tweet', 'retweet', 'quotetweet', 'retweet_of_quotetweet']
+        'id'
+        'author'
+        'retweeted_author'
+        'quoted_author'
+        'replied_author'
+        'text',
+        'retweeted_text',
+        'quoted_text'}
+    If the field doesn't apply to the tweet the value is None.
+    '''
+
+    # Initialize the return object
+    out = {'retweeted_author': None, 'quoted_author': None, 'text': None,
+           'retweeted_text': None, 'quoted_text': None}
+    out['author'] = tweet['user']['screen_name']
+    out['id'] = tweet['id']
+
+    # Check what fields are present to determine type of tweet
+    rt = 'retweeted_status' in tweet
+    if rt:
+        retweet = tweet['retweeted_status']
+    qt = 'quoted_status' in tweet
+    if qt:
+        qtweet = tweet['quoted_status']
+
+    # If the tweet is a reply, get the author that it replies to
+    out['replied_author'] = tweet.get('in_reply_to_screen_name', None)
+    
+    # Extract content depending on tweet type
+
+    # standard tweet (can be reply)
+    if not rt and not qt:         
+        out['type'] = 'tweet'
+        out['text'] = html.escape(tweet['text'])
+    # Retweet
+    elif rt and not qt: 
+        out['retweeted_text'] = html.escape(retweet['text'])
+        out['retweeted_author'] = retweet['user']['screen_name']
+        if 'quoted_status' in retweet:
+            out['type'] = 'retweet_of_quotetweet'
+            out['quoted_text'] = html.escape(retweet['quoted_status']['text'])
+            out['quoted_author'] = retweet['quoted_status']['user']['screen_name']
+        else:
+            out['type'] = 'retweet'
+    # Quote tweet
+    elif qt and not rt: 
+        out['type'] = 'quotetweet'
+        out['quoted_text'] = html.escape(qtweet['text'])
+        out['quoted_author'] = qtweet['user']['screen_name']
+    # Weird case where it has both 'retweeted_status' and 'quoted_status'
+    # I don't completely understand this case (TODO). For now treated as
+    # retweet
+    else:
+        out['type'] = 'retweet_of_quotetweet'
+        out['retweeted_text'] = html.escape(retweet['text'])
+        out['retweeted_author'] = retweet['user']['screen_name']
+        out['quoted_text'] = html.escape(qtweet['text'])
+        out['quoted_author'] = qtweet['user']['screen_name']
+
+    return out
+
+
 def read_tweet(tweet):
     '''Extract relevant content from tweet object
 
@@ -84,24 +161,63 @@ def read_tweet(tweet):
     html for the tweet (either as received from oembed endpoint or if tweet not
     available on twitter the extracted text with minimal html embedding.)
     '''
-    temp = '{} - {}'
-    if "text" in tweet: # Twitter format
-        tweet_text = temp.format(tweet["user"]["screen_name"], tweet["text"])
-        tweet_id = tweet["id"]
-        tweet_user = tweet["user"]["screen_name"]
-    elif "body" in tweet: # Gnip Format
-        tweet_text = temp.format(tweet["actor"]["preferredUsername"],
-                                 tweet["body"])
-        idstr = tweet["id"]
-        tweet_id = int(idstr[idstr.rfind(":")+1:])
-        tweet_user = tweet["actor"]["preferredUsername"]
+    html_templates = {
+            'tweet': ('<pre>Tweet type: {type}</br>'
+                      'Author: {author}</br>'
+                      'Text: {text}</pre>'),
+            'retweet': ('<pre>Tweet type: {type}</br>'
+                        'Author: {author}</br>'
+                        'Retweeted Author: {retweeted_author}</br>'
+                        'Retweeted text: {retweeted_text}</pre>'),
+            'quotetweet': ('<pre>Tweet type: {type}</br>'
+                           'Author: {author}</br>'
+                           'Text: {text}</br>'
+                           'Quoted author: {quoted_author}</br>'
+                           'Quoted text: {quoted_text}</pre>'),
+            'retweet_of_quotetweet': ('<pre>Tweet type: {type}</br>'
+                                      'Author: {author}</br>'
+                                      'Retweeted author: {retweeted_author}</br>'
+                                      'Retweeted text: {retweeted_text}</br>'
+                                      'Quoted author: {quoted_author}</br>'
+                                      'Quoted text: {quoted_text}</pre>'),
+            'embedded': ('<pre>Tweet type: {type}</br>'
+                         'Author: {author}</pre></br>{embedded}')
+            }
+    
+    # Try to extract all info with consideration of tweet type (see
+    # `get_tweet_content()`) this only works for standard twitter json format
+    # (not GNIP) so if that fails, resort to the old way
+    try:
+        contents = get_tweet_content(tweet)
+        tweet_id = contents['id']
+        tweet_user = contents['author']
+        ttype = contents['type']
+        default_html = html_templates[ttype].format(**contents)
+    except KeyError as e:
+        if 'body' in tweet:
+            tweet_text = temp.format(tweet["actor"]["preferredUsername"],
+                                     tweet["body"])
+            idstr = tweet["id"]
+            tweet_id = int(idstr[idstr.rfind(":")+1:])
+            tweet_user = tweet["actor"]["preferredUsername"]
+            ttype = 'NA'
+            default_html = html_templates['tweet'].format(type='',
+                                                          author=tweet_user,
+                                                          text=tweet_text)
+        else:
+            raise e
+
+    # Try to get html from oembed endpoint
+    rendered_html = get_embed(tweet_user, tweet_id)
+
+    if rendered_html is not None:
+        out_html = html_templates['embedded'].format(author=tweet_user,
+                                                     type=ttype,
+                                                     embedded=rendered_html)
     else:
-        raise ValueError('Tweet in unexpected format: {}'.format(tweet))
+        out_html = default_html
 
-    default_html_text = "<pre>" + html.escape(tweet_text) + "</pre>"
-    rendered_html = get_embed(tweet_user, tweet_id, default_html_text)
-
-    return rendered_html, tweet_id
+    return out_html, tweet_id
 
 # ==============================================================================
 # Script code
