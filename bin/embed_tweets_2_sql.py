@@ -74,6 +74,26 @@ def get_embed(username, tweet_id):
 
     return rendered_html
 
+def get_field(obj, path, default=None):
+    '''Get a field from a nested json via a path
+    
+    Arguments:    
+    ----------
+    obj: dict, object to extract data from
+    path: str, path of keys to target field in format 'key1/key2/...'
+    default: value to return if path is not available
+    '''
+    components = path.split('/')
+    try:
+        if len(components) == 1:
+            return obj[components[0]] 
+        else:
+            return get_field(obj=obj[components[0]], 
+                             path='/'.join(components[1:]), 
+                             default=default)
+    except KeyError:
+        return default
+    
 def linkify(text):
     '''Takes text and transforms urls to html links'''
     regex = re.compile(r'(http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%'
@@ -104,53 +124,35 @@ def get_tweet_content(tweet):
     If the field doesn't apply to the tweet the value is None.
     '''
 
-    # Initialize the return object
-    out = {'retweeted_author': None, 'quoted_author': None, 'text': None,
-           'retweeted_text': None, 'quoted_text': None}
-    out['author'] = tweet['user']['screen_name']
-    out['id'] = tweet['id']
-
-    # Check what fields are present to determine type of tweet
-    rt = 'retweeted_status' in tweet
-    if rt:
-        retweet = tweet['retweeted_status']
-    qt = 'quoted_status' in tweet
-    if qt:
-        qtweet = tweet['quoted_status']
-
-    # If the tweet is a reply, get the author that it replies to
-    out['replied_author'] = tweet.get('in_reply_to_screen_name', None)
+    # Extract data or fill None if not available (see `get_field`)
+    out = {
+        'retweeted_author' = get_field(tweet, 'retweeted_status/user/screen_name'),
+        'quoted_author' = get_field(tweet, 'quoted_status/user/screen_name'),
+        'text' = get_field(tweet, 'text'),
+        'retweeted_text' = get_field(tweet, 'retweeted_status/text'),
+        'quoted_text' = get_field(tweet, 'quoted_status/text'),
+        'author' = get_field(tweet, 'user/screen_name'),
+        'id' = get_field(tweet, 'id'),
+        'replied_author' = get_field(tweet, 'in_reply_to_screen_name')
+    }
     
-    # Extract content depending on tweet type
-
-    # standard tweet (can be reply)
+    # Determine tweet type
+    rt = 'retweeted_status' in tweet
+    qt = 'quoted_status' in tweet
     if not rt and not qt:         
         out['type'] = 'tweet'
-        out['text'] = linkify(tweet['text'])
-    # Retweet
     elif rt and not qt: 
-        out['retweeted_text'] = linkify(retweet['text'])
-        out['retweeted_author'] = retweet['user']['screen_name']
-        if 'quoted_status' in retweet:
+        if 'quoted_status' in tweet['retweeted_status']:
             out['type'] = 'retweet_of_quotetweet'
-            out['quoted_text'] = linkify(retweet['quoted_status']['text'])
-            out['quoted_author'] = retweet['quoted_status']['user']['screen_name']
         else:
             out['type'] = 'retweet'
-    # Quote tweet
     elif qt and not rt: 
         out['type'] = 'quotetweet'
-        out['quoted_text'] = linkify(qtweet['text'])
-        out['quoted_author'] = qtweet['user']['screen_name']
     # Weird case where it has both 'retweeted_status' and 'quoted_status'
     # I don't completely understand this case (TODO). For now treated as
     # retweet
     else:
         out['type'] = 'retweet_of_quotetweet'
-        out['retweeted_text'] = linkify(retweet['text'])
-        out['retweeted_author'] = retweet['user']['screen_name']
-        out['quoted_text'] = linkify(qtweet['text'])
-        out['quoted_author'] = qtweet['user']['screen_name']
 
     return out
 
