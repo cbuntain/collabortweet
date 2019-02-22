@@ -26,6 +26,7 @@ import html
 import itertools
 import random
 import requests
+import re
 
 
 # ==============================================================================
@@ -73,6 +74,11 @@ def get_embed(username, tweet_id):
 
     return rendered_html
 
+def linkify(text):
+    '''Takes text and transforms urls to html links'''
+    regex = re.compile(r'(http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%'
+                       r'[0-9a-fA-F][0-9a-fA-F]))+)')
+    return regex.sub(r'<a href="\1" target="_blank">\1</a>', text)
 
 def get_tweet_content(tweet):
     '''Get the relevant content of a tweet to be displayed to the labeler.
@@ -120,34 +126,33 @@ def get_tweet_content(tweet):
     # standard tweet (can be reply)
     if not rt and not qt:         
         out['type'] = 'tweet'
-        out['text'] = html.escape(tweet['text'])
+        out['text'] = linkify(tweet['text'])
     # Retweet
     elif rt and not qt: 
-        out['retweeted_text'] = html.escape(retweet['text'])
+        out['retweeted_text'] = linkify(retweet['text'])
         out['retweeted_author'] = retweet['user']['screen_name']
         if 'quoted_status' in retweet:
             out['type'] = 'retweet_of_quotetweet'
-            out['quoted_text'] = html.escape(retweet['quoted_status']['text'])
+            out['quoted_text'] = linkify(retweet['quoted_status']['text'])
             out['quoted_author'] = retweet['quoted_status']['user']['screen_name']
         else:
             out['type'] = 'retweet'
     # Quote tweet
     elif qt and not rt: 
         out['type'] = 'quotetweet'
-        out['quoted_text'] = html.escape(qtweet['text'])
+        out['quoted_text'] = linkify(qtweet['text'])
         out['quoted_author'] = qtweet['user']['screen_name']
     # Weird case where it has both 'retweeted_status' and 'quoted_status'
     # I don't completely understand this case (TODO). For now treated as
     # retweet
     else:
         out['type'] = 'retweet_of_quotetweet'
-        out['retweeted_text'] = html.escape(retweet['text'])
+        out['retweeted_text'] = linkify(retweet['text'])
         out['retweeted_author'] = retweet['user']['screen_name']
-        out['quoted_text'] = html.escape(qtweet['text'])
+        out['quoted_text'] = linkify(qtweet['text'])
         out['quoted_author'] = qtweet['user']['screen_name']
 
     return out
-
 
 def read_tweet(tweet):
     '''Extract relevant content from tweet object
