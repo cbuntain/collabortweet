@@ -107,7 +107,8 @@ def get_tweet_content(tweet):
 
     Arguments:
     ----------
-    tweet, dict Tweet object (for now in Twitter format only. TODO: make work with GNIP)
+    tweet, dict Tweet object (for now in Twitter format only. TODO: make work 
+        with GNIP)
 
     Returns:
     ----------
@@ -126,21 +127,21 @@ def get_tweet_content(tweet):
 
     # Extract data or fill None if not available (see `get_field`)
     out = {
-        'retweeted_author' = get_field(tweet, 
-                                       'retweeted_status/user/screen_name'),
-        'quoted_author' = get_field(tweet, 'quoted_status/user/screen_name'),
-        'text' = get_field(tweet, 'text'),
-        'retweeted_text' = get_field(tweet, 'retweeted_status/text'),
-        'quoted_text' = get_field(tweet, 'quoted_status/text'),
-        'author' = get_field(tweet, 'user/screen_name'),
-        'id' = get_field(tweet, 'id'),
-        'replied_author' = get_field(tweet, 'in_reply_to_screen_name')
+        'retweeted_author': get_field(tweet, 
+                                          'retweeted_status/user/screen_name'),
+        'quoted_author': get_field(tweet, 'quoted_status/user/screen_name'),
+        'text': get_field(tweet, 'text'),
+        'retweeted_text': get_field(tweet, 'retweeted_status/text'),
+        'quoted_text': get_field(tweet, 'quoted_status/text'),
+        'author': get_field(tweet, 'user/screen_name'),
+        'id': get_field(tweet, 'id'),
+        'replied_author': get_field(tweet, 'in_reply_to_screen_name')
     }
 
     # linkify text fields:
     for key in out:
         if 'text' in key:
-            out[key] = linkify(out[key)
+            out[key] = linkify(out[key])
     
     # Determine tweet type
     rt = 'retweeted_status' in tweet
