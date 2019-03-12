@@ -140,7 +140,7 @@ def get_tweet_content(tweet):
 
     # linkify text fields:
     for key in out:
-        if 'text' in key:
+        if 'text' in key and out[key] is not None:
             out[key] = linkify(out[key])
     
     # Determine tweet type
@@ -256,9 +256,12 @@ if __name__ == '__main__':
     # For every tweet in the input json, generate extract the html and id
     tweetList = []
     with open(TWEET_PATH, "r") as infile:
-        for line in infile:
-            tweet = json.loads(line)
-
+        for i,line in enumerate(infile):
+            try:
+                tweet = json.loads(line)
+            except json.JSONDecodeError:
+                print('Json decode error in line {}. Skipped'.format(i))
+                continue
             tweet_html, tweet_id = read_tweet(tweet)
 
             if tweet_html is None:
@@ -294,8 +297,7 @@ if __name__ == '__main__':
 
         # If we didn't specify a number of pairs, find all
         if pair_count is None:
-            pair_list = itertools.combinations(element_ids, 2)
-
+            pair_list = itertools.combinations(element_ids, 2) 
         else: # Otherwise, randomly select k pairs
             pair_accum = set()
             for e_index, e_id in enumerate(element_ids):
