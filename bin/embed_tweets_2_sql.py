@@ -9,7 +9,7 @@ https://developer.twitter.com/en/docs/twitter-for-websites/embedded-tweets/overv
 Author: Cody Buntain (creator), Fridolin Linder (modifications)
 
 Usage:
-    $> python embedTweets2sql.py [task_description_path] [sqlite_file_path]
+    $> python embed_tweets_2_sql.py [task_description_path] [sqlite_file_path]
     [tweet_json_path]
 
 Arguments:
