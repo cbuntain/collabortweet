@@ -1,40 +1,56 @@
-#!/usr/bin/python
+'''CLI script to delete task from collabortweet
+
+Deletes the task + all records and exsisting labels (!)
+
+Arguments:
+    database: path to `.sqlite3` database file to delet task from.
+    task_id: id of the task in `database`.
+
+Authors: Cody Buntain, Fridolin Linder
+'''
 
 import sqlite3
-import sys
-import json
-import html
-import codecs
-import itertools
-import random
+import argparse
 
-sqlitePath = sys.argv[1]
-taskId = int(sys.argv[2])
+if __name__ == '__main__':
 
-print("Deleting Task [%d] from: %s" % (taskId, sqlitePath))
+    # ==========================================================================
+    # Parse commandline arguments
+    # ==========================================================================
 
-# Open the sqlite3 file
-conn = sqlite3.connect(sqlitePath)
-c = conn.cursor()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--database')
+    parser.add_argument('--task_id')
+    args = parser.parse_args()
+    
+    sqlitePath = args.database
+    taskId = args.task_id
 
-# Delete all element labels
-c.execute("DELETE FROM elementLabels WHERE labelId IN (SELECT l.labelId FROM labels l WHERE l.taskId = :taskId)", 
-    {"taskId": taskId})
+    print("Deleting Task [%d] from: %s" % (taskId, sqlitePath))
 
-# Delete all elements
-c.execute("DELETE FROM elements WHERE taskId = :taskId", 
-    {"taskId": taskId})
+    # Open the sqlite3 file
+    conn = sqlite3.connect(sqlitePath)
+    c = conn.cursor()
 
-# Delete all labels
-c.execute("DELETE FROM labels WHERE taskId = :taskId", 
-    {"taskId": taskId})
+    # Delete all element labels
+    c.execute("DELETE FROM elementLabels WHERE labelId IN"
+              " (SELECT l.labelId FROM labels l WHERE l.taskId = :taskId)", 
+        {"taskId": taskId})
 
-# Delete task
-c.execute("DELETE FROM tasks WHERE taskId = :taskId", 
-    {"taskId": taskId})
+    # Delete all elements
+    c.execute("DELETE FROM elements WHERE taskId = :taskId", 
+        {"taskId": taskId})
 
-# Commit
-conn.commit()
-conn.close()
+    # Delete all labels
+    c.execute("DELETE FROM labels WHERE taskId = :taskId", 
+        {"taskId": taskId})
 
-print("Task Deleted.")
+    # Delete task
+    c.execute("DELETE FROM tasks WHERE taskId = :taskId", 
+        {"taskId": taskId})
+
+    # Commit
+    conn.commit()
+    conn.close()
+
+    print("Task Deleted.")
