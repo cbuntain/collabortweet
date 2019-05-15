@@ -1,7 +1,6 @@
 '''
 This script takes a sample of tweets in json format and splits them up for
-collabortweet labeling.
-
+labeling by multiple labelers.
 
 Given the inputs, the data is split up into equal sized task datasets for each
 of the [n_labelers] labeler. Each task dataset also contains a overlapping set
