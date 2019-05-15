@@ -1,2 +1,4 @@
 node_modules
 testdata/
+bin/__pycache__/
+package-lock.json
