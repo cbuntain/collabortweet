@@ -24,7 +24,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     
     sqlitePath = args.database
-    taskId = args.task_id
+    taskId = int(args.task_id)
 
     print("Deleting Task [%d] from: %s" % (taskId, sqlitePath))
 
