@@ -17,10 +17,10 @@ Arguments:
         default value 88332 is used for replicability.
 Returns:
     - [output_prefix]_eval.json
-    - [output_prefix]_worker_[x].json for x in n_labelers
+    - [output_prefix]_partition_[x].json for x in n_labelers
 
 Usage:
-    python make_collabortweet_taskdatasets.py --input_data [input_file]
+    python partition_data.py --input_data [input_file]
     --n_partitions [n] --n_eval [n] --output_prefix
     [prefix]
 
