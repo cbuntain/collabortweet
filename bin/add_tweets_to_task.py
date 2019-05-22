@@ -66,3 +66,6 @@ if __name__ == '__main__':
         element_ids.append(el_id)
 
     print("Element Count:", len(element_ids))
+    
+    conn.commit()
+    conn.close()
