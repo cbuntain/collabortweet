@@ -97,14 +97,19 @@ if __name__ == "__main__":
     index = {}
     for p, partition in enumerate(partitions):
         for idx in partition:
-            index[idx] = part_conns[p]
+            if idx not in index:
+                index[idx] = [part_conns[p]]
+            else:
+                index[idx].append(part_conns[p])
+
     for idx in eval_idxs:
-        index[idx] = eval_conn
+        index[idx].append(eval_conn)
 
     # Go through input and write to connections
     with open(input_data) as infile:
         for idx, line in enumerate(infile):
-            index[idx].write(line)
+            for conn in index[idx]:
+                conn.write(line)
 
     for p_con in part_conns:
         p_con.close()
