@@ -9,25 +9,33 @@ https://developer.twitter.com/en/docs/twitter-for-websites/embedded-tweets/overv
 Author: Fridolin Linder
 
 Usage:
-    $> python add_tweets_to_task.py [sql_path] [tweet_file_path] [task_id]
+    $> python add_tweets_to_task.py --sqlite_path [sql_path]
+         --data_path [tweet_file_path] --task_id [task_id]
 
 Arguments:
     sqlite_path: sqlite database file (default `pairComp.sqlite3`)
-    tweet_file_path: json file containing one tweet per line in twitter format
+    data_path: json file containing one tweet per line in twitter format
     task_id: id of the task the tweets shoud be added to
 '''
-import sqlite3
-import sys
 import json
+import argparse
+import sqlite3
 
 from utils import read_tweet
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(
+        description='imports tweets into an exsisting collabortweet task'
+    )
+    parser.add_argument('--sqlite_path')
+    parser.add_argument('--data_path')
+    parser.add_argument('--task_id')
+    args = parser.parse_args()
 
     # Store the commandline arguments passed to the script
-    SQLITE_PATH = sys.argv[1]
-    TWEET_PATH = sys.argv[2]
-    TASK_ID = sys.argv[3]
+    SQLITE_PATH = args.sqlite_path
+    TWEET_PATH = args.data_path
+    TASK_ID = int(args.task_id)
 
     conn = sqlite3.connect(SQLITE_PATH)
     c = conn.cursor()
@@ -35,7 +43,7 @@ if __name__ == '__main__':
     # For every tweet in the input json, generate extract the html and id
     tweet_list = []
     with open(TWEET_PATH, "r") as infile:
-        for i,line in enumerate(infile):
+        for i, line in enumerate(infile):
             try:
                 tweet = json.loads(line)
             except json.JSONDecodeError:
@@ -58,5 +66,3 @@ if __name__ == '__main__':
         element_ids.append(el_id)
 
     print("Element Count:", len(element_ids))
-
-

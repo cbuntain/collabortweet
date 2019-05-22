@@ -8,22 +8,22 @@ https://developer.twitter.com/en/docs/twitter-for-websites/embedded-tweets/overv
 
 Author: Cody Buntain (creator), Fridolin Linder (modifications)
 
-Usage:
-    $> python embed_tweets_2_sql.py [task_description_path] [sqlite_file_path]
-    [tweet_json_path]
-
 Arguments:
-    task_description_path: json file with task data (see collabortweet
+    task_path: json file with task data (see collabortweet
         documentation)
-    sqlite_file_path: sqlite database file (default `pairComp.sqlite3`)
-    tweet_json_path: json file containing one tweet per line in either twitter
-    API format or GNIP format
+    sqlite_path: sqlite database file (default `pairComp.sqlite3`)
+    data_path: json file containing one tweet per line in either twitter
+        API format or GNIP format
+
+Usage:
+    $> python embed_tweets_2_sql.py --task_path [task_description_path]
+        --sqlite_path [sqlite_file_path] --data_path [tweet_json_path]
 '''
 import sqlite3
-import sys
 import json
 import itertools
 import random
+import argparse
 
 from utils import read_tweet
 
@@ -32,15 +32,23 @@ from utils import read_tweet
 # ==============================================================================
 if __name__ == '__main__':
     # Store the commandline arguments passed to the script
-    TASK_DESC_PATH = sys.argv[1]
-    SQLITE_PATH = sys.argv[2]
-    TWEET_PATH = sys.argv[3]
+    parser = argparse.ArgumentParser(
+        description='Create new task and import tweets.'
+    )
+    parser.add_argument('--task_path')
+    parser.add_argument('--sqlite_path')
+    parser.add_argument('--data_path')
+    parser.add_argument('--pair_count', default=None)
+    args = parser.parse_args()
+
+    TASK_DESC_PATH = args.task_path
+    SQLITE_PATH = args.sqlite_path
+    TWEET_PATH = args.data_path
 
     # If pairwise task get pair count
-    if len(sys.argv) > 4:
-        pair_count = int(sys.argv[4])
-    else:
-        pair_count = None
+    pair_count = args.pair_count
+    if pair_count is not None:
+        pair_count = int(pair_count)
 
     # Load the task metadata from taskdescription
     with open(TASK_DESC_PATH, "r") as infile:
@@ -50,7 +58,7 @@ if __name__ == '__main__':
     # For every tweet in the input json, generate extract the html and id
     tweetList = []
     with open(TWEET_PATH, "r") as infile:
-        for i,line in enumerate(infile):
+        for i, line in enumerate(infile):
             try:
                 tweet = json.loads(line)
             except json.JSONDecodeError:
@@ -63,7 +71,6 @@ if __name__ == '__main__':
                 continue
 
             tweetList.append((tweet_html, tweet_id))
-
 
     # Insert the data into the database
     conn = sqlite3.connect(SQLITE_PATH)
