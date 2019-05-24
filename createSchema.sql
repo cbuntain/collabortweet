@@ -8,8 +8,10 @@ CREATE TABLE IF NOT EXISTS tasks (
 CREATE TABLE IF NOT EXISTS users (
 	userId INTEGER PRIMARY KEY,
 	screenname TEXT UNIQUE NOT NULL,
+	password TEXT UNIQUE NOT NULL,
 	fname TEXT,
-	lname TEXT
+	lname TEXT,
+	isadmin BIT
 );
 
 CREATE TABLE IF NOT EXISTS elements (

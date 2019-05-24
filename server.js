@@ -1,10 +1,15 @@
 require('babel-polyfill');
 
-var fsp = require('fs-promise')
-var express = require('express')
-var Promise = require('bluebird')
-var db = require('sqlite/legacy')
+var fsp = require('fs-promise');
+var express = require('express');
+var Promise = require('bluebird');
+var db = require('sqlite/legacy');
 var userDb = require('./users');
+var passport = require('passport'), LocalStrategy = require('passport-local').Strategy;
+var crypto = require('crypto');
+var cookieParser = require('cookie-parser');
+var flash = require('connect-flash');
+
 var session = require('express-session')(
 	{
 		secret: 'pairC0MP!1',
@@ -13,9 +18,42 @@ var session = require('express-session')(
 		cookie: { secure: false }
 	});
 
-var dbFile = 'pairComp.sqlite3'
+var dbFile = 'pairComp.sqlite3';
 
-var app = express()
+var app = express();
+//var flash = require('connect-flash');
+app.use(flash());
+
+function hashPassword(password, salt){
+    var has = crypto.createHash('sha256');
+    hash.update(password);
+    hash.update(salt);
+    return hash.digest('hex');
+}
+
+//WILL BE USED ONCE HASHED PASSWORD STORAGE IS IMPLEMENTED
+passport.use(new LocalStrategy(function(username, password, done){
+    db.get('SELECT salt FROM users WHERE username = ?', username, function(err, row){
+        if(!row) return done(null, false);
+        var hash = hashPassword(password, row.salt);
+        db.get('SELECT username, id FROM users WHERE username = ? AND password = ?', username, hash, function(err, row){
+            if(!row) return done(null, false);
+            return done(null, row);
+        });
+    });
+}));
+
+
+passport.serializeUser(function(user, done) {
+  return done(null, user.id);
+});
+
+passport.deserializeUser(function(id, done) {
+  db.get('SELECT id, username FROM users WHERE id = ?', id, function(err, row) {
+    if (!row) return done(null, false);
+    return done(null, row);
+  });
+});
 
 // Construct a parser for JSON
 var bodyParser = require('body-parser')
@@ -33,6 +71,9 @@ app.set('view engine', 'pug')
 // Set the static directory
 app.use('/static', express.static('public'))
 
+app.use(passport.initialize());
+//app.use(app.router);
+
 // Function for getting a random element
 var getRandomElement = function(arr) {
 	var len = arr.length;
@@ -45,6 +86,8 @@ var getRandomElement = function(arr) {
 
 // Root view
 app.get('/', function (req, res) {
+
+    req.session.user = null;
 
 	// Call the user records function on the database to get a list of users
 	userDb.users.getUsers(db, function(userData) {
@@ -64,7 +107,7 @@ app.get('/', function (req, res) {
 })
 
 // Login
-app.get('/login', function(req, res) {
+/*app.get('/login', function(req, res) {
 	console.log("Welcome, " + req.query.userId)
 
 	var userObj = userDb.users.findById(db, req.query.userId, function(data, user) {
@@ -77,8 +120,45 @@ app.get('/login', function(req, res) {
 		} else { // failed login
 			res.status(403);
 		}
-	})
-})
+	});
+
+    
+});*/
+
+app.get('/login', function(req, res) {
+    console.log('login attempt');
+    console.log(req.query.username);
+    console.log(req.query.password);
+    var userObj = userDb.users.findByScreenname(db, req.query.username, function(data, user) {
+
+        if(user){
+            console.log("found user");
+            if(user.password == req.query.password){
+                //req.session.user = user;
+                req.session.user = user;
+                console.log("User Info: " + req.session.user.screenname + ", " + req.session.user.userId);
+                res.redirect('/taskView');
+            }
+            else{
+                req.session.user = null;
+                //req.flash('Please enter a valid username-password combination');
+                res.redirect('/');
+            }
+        } else {
+            //req.flash('Please enter a valid username');
+            res.redirect('/');
+            res.status(403);
+        }
+    });
+});
+
+//FOR HASHED PASSWORDS
+/*
+app.post('/login', passport.authenticate('local', {
+    successRedirect: '/taskView',
+    failureRedirect: '/login',
+    failureFlash: false
+}));*/
 
 // Send a list of the tasks for inspection
 app.get('/taskStats', function(req, res) {
