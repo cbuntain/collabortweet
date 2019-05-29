@@ -1,24 +1,60 @@
 //- index.pug
 doctype html
 html
-	head
-		include includes/head.pug
-	body
-		include includes/nav.pug
+    head
+        include includes/head.pug
+    body
+        include includes/nav.pug
 
-		<!-- Main jumbotron -->
-		div(class="jumbotron")
-			div(class="container")
-				h2 Welcome. Select your user.
-		
-		//- Display options
-		div(class="container")
-			each v in dataMap.userList
-				div(class="row")
-					div(class="panel panel-default")
-						div(class="panel-body")
-							h4 
-								a(href="/login?userId=" + v.userId) #{v.userId}. #{v.fname} #{v.lname}
+        <!-- Main jumbotron -->
+        div(class="jumbotron")
+            div(class="container")
+                h2 Welcome. Enter your username and password.
+        
+        //- Display options
+        //- div(class="container")
+        //-     each v in dataMap.userList
+        //-         div(class="row")
+        //-             div(class="panel panel-default")
+        //-                 div(class="panel-body")
+        //-                     h4 
+        //-                         a(href="/login?userId=" + v.userId) #{v.userId}. #{v.fname} #{v.lname}
+        div(class = "container")
+            div(class = "row")
+                div(class = "panel panel-default")
+                    div(class = "panel-body")
+                        form(action = '/login', method='GET')
+                            
+                            p
+                                | username: 
+                                input#username(type='text', name='username', value='')
+                        
+                            p
+                                | password:
+                                input#password(type = 'text', name = 'password', value = '')
+                        
+                            p
+                                input(type='submit', value='Log In')
+
+//-         block content
+//-             div.text-center
+//-                 form(class="form-signin" method="POST" action="/users/login")
+//-                     #error
+//-                         if error
+//-                             p.text-danger Error!!!
+//-         - var h1Classes = ['h3', 'mb-3', 'font-weight-normal']
+//-             h1(class=h1Classes) Please sign in
+//-         //-input email
+
+//-             label( for="inputEmail" class="sr-only") Email address
+//-             input(type="username" name="username" id="inputUsername" class="form-control" placeholder="Username" required autofocus)
+//-         //-input password
+//-             label(for="inputPassword" class="sr-only") Password
+//-             input(type="password" name="password" id="inputPassword" class="form-control" placeholder="Password" required)
+
+//- //-signIn button
+//-             - var buttonClass=['btn', 'btn-lg', 'btn-primary', 'btn-block'];
+//-             button(class=buttonClass type="submit") Sign in
 
 
-		include includes/jsFooter.pug
+        include includes/jsFooter.pug
