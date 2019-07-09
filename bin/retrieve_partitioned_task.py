@@ -49,25 +49,24 @@ OUTPATH = args.output
 # Get the raw labels from the database
 db_connection = sqlite3.connect(DB_PATH)
 query = '''
-SELECT (elements.elementId, 
-        externalId, 
-        elements.taskId, 
-        elementLabels.userId,
-        elementLabels.labelId,
-        elementText,
-        screenname,
-        labelText,
-        elementLabels.time)
-    FROM elementLabels 
+SELECT elements.elementId, externalId,
+       elements.taskId,
+       elementLabels.userId,
+       elementLabels.labelId,
+       elementText,
+       screenname,
+       labelText,
+       elementLabels.time
+    FROM elementLabels
     LEFT JOIN elements ON elementLabels.elementId = elements.elementId
     LEFT JOIN users ON elementLabels.userId = users.userId
     LEFT JOIN labels ON elementLabels.labelId = labels.labelId
     WHERE elements.taskId IN ({task_ids});
-'''.format(task_ids = ','.join([str(x) for x in TASK_IDS]))
+'''.format(task_ids=','.join([str(x) for x in TASK_IDS]))
 labels = pd.read_sql_query(query, db_connection)
 
 # Remove duplicated element/coder pairs (collabortweet artifacts)
-labels = labels[~raw_labels.duplicated(subset=['externalId', 'screenname'])]
+labels = labels[~labels.duplicated(subset=['externalId', 'screenname'])]
 coders = labels['screenname'].unique()
 
 # Find the eval tweets (tweets that are overlapping between all coders)
@@ -81,13 +80,14 @@ eval_df = eval_df.loc[eval_ids]
 kappas = []
 for coder_pair in itertools.combinations(coders, 2):
     cm = confusion_matrix(eval_df[coder_pair[0]], eval_df[coder_pair[1]])
-    kappa = inter_rater.cohens_kappa(cm)
+    kappa = cohens_kappa(cm)
     kappas.append((*coder_pair, kappa['kappa']))
-kappas = pd.DataFrame(kappas, columns = ['coder_1', 'coder_2', 'kappa'])
+kappas = pd.DataFrame(kappas, columns=['coder_1', 'coder_2', 'kappa'])
 
 avg_kappas = []
 for coder in coders:
-    val = kappas[(kappas['coder_1'] == coder) | (kappas['coder_2'] == coder)]['kappa'].mean()
+    val = kappas[(kappas['coder_1'] == coder) |
+                 (kappas['coder_2'] == coder)]['kappa'].mean()
     avg_kappas.append((coder, val))
 avg_kappas = pd.DataFrame(avg_kappas, columns=['coder', 'avg_kappa'])
 avg_kappas.set_index('coder', inplace=True, verify_integrity=True)
@@ -101,7 +101,9 @@ if EVAL_USER is not None:
             continue
         val = accuracy_score(eval_labels, eval_df[coder])
         gs_agreement.append((coder, val))
-    gs_agreement = pd.DataFrame(gs_agreement, columns=['coder', 'gold_standard_accuracy'])
+    gs_agreement = pd.DataFrame(
+        gs_agreement, columns=['coder', 'gold_standard_accuracy']
+    )
     gs_agreement.set_index('coder', inplace=True, verify_integrity=True)
 
 # Calculate average time per tweet for each labeler
@@ -112,16 +114,21 @@ CUTOFF = 60*3
 time_df = copy.copy(labels.dropna())
 time_df['time_delta'] = [x.seconds for x in time_df['time_delta']]
 time_df = time_df[time_df['time_delta'] <= CUTOFF]
-time_df = time_df[['screenname', 'time_delta']].groupby('screenname').agg(['median', 'mean'])
+time_df = time_df[['screenname', 'time_delta']].groupby('screenname')\
+                                               .agg(['median', 'mean'])
 
 time_df.columns = ['median_time', 'mean_time']
 
 ## Get the number of elements each coder labeled
 ## eval and non_eval
 labels['is_eval'] = labels['externalId'].isin(eval_ids)
-n_labels = labels[['screenname', 'is_eval', 'labelText']].groupby(['screenname', 'is_eval']).count()
+n_labels = labels[['screenname', 'is_eval', 'labelText']].groupby(
+    ['screenname', 'is_eval']
+).count()
 n_labels.reset_index(inplace=True)
-n_labels = n_labels.pivot(index='screenname', columns='is_eval', values='labelText')
+n_labels = n_labels.pivot(
+    index='screenname', columns='is_eval', values='labelText'
+)
 n_labels.columns = ['unique_elements', 'overlapping_elements']
 
 coder_stats = avg_kappas.join(time_df).join(n_labels)
@@ -129,17 +136,19 @@ coder_stats = avg_kappas.join(time_df).join(n_labels)
 # Join it all into one table
 if EVAL_USER is not None:
     coder_stats = coder_stats.join(gs_agreement)
-    
+
 ## Print summary stats
 print(coder_stats)
-   
+
 # Create the labels output
 
 ## Get the plurality vote for the overlapping elements
 eval_label_counts = eval_df.apply(lambda row: row.value_counts(), axis=1)
 eval_label_counts.fillna(0, inplace=True)
 eval_labels = pd.DataFrame(eval_label_counts.idxmax(axis=1), columns=['label'])
-eval_labels['entropy'] = eval_label_counts.apply(lambda row: entropy(row/len(coders)), axis=1)
+eval_labels['entropy'] = eval_label_counts.apply(
+    lambda row: entropy(row/len(coders)), axis=1
+)
 eval_labels.columns = ['label', 'entropy']
 
 ## Extract the labels for the rest of the data
