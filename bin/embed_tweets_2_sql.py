@@ -27,9 +27,6 @@ import argparse
 
 from utils import read_tweet
 
-# ==============================================================================
-# Script code
-# ==============================================================================
 if __name__ == '__main__':
     # Store the commandline arguments passed to the script
     parser = argparse.ArgumentParser(
