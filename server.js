@@ -9,6 +9,9 @@ var passport = require('passport'), LocalStrategy = require('passport-local').St
 var crypto = require('crypto');
 var cookieParser = require('cookie-parser');
 var flash = require('connect-flash');
+var fs = require('fs');
+var config_str = fs.readFileSync('CONFIG.json');
+var config = JSON.parse(config_str);
 
 var session = require('express-session')(
 	{
@@ -18,7 +21,7 @@ var session = require('express-session')(
 		cookie: { secure: false }
 	});
 
-var dbFile = 'pairComp.sqlite3';
+var dbFile = config.db_path;
 
 var app = express();
 //var flash = require('connect-flash');
@@ -676,7 +679,7 @@ Promise.resolve()
 
 	// Now, with the DB successfully started, start the server
 	.finally(() => {
-		app.listen(3000, function () {
+		app.listen(config.port, function () {
 			console.log('Starting server...')
 		})
 	})
