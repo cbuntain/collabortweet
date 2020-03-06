@@ -61,6 +61,8 @@ def get_field(obj, path, default=None):
     try:
         if len(components) == 1:
             return obj[components[0]]
+        elif obj[components[0]] is None:
+            return default
         else:
             return get_field(obj=obj[components[0]],
                              path='/'.join(components[1:]),
