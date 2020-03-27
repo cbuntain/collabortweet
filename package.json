@@ -6,14 +6,16 @@
   "dependencies": {
     "bluebird": "^3.4.7",
     "body-parser": "^1.15.2",
+    "connect-flash": "^0.1.1",
     "cookie-parser": "^1.4.3",
     "express": "^4.14.0",
     "express-session": "^1.14.2",
     "fs-promise": "^1.0.0",
     "passport": "^0.3.2",
+    "passport-local": "^1.0.0",
     "pug": "^2.0.0-beta6",
-    "sqlite3": "^4.0.0",
-    "sqlite": "^2.2.4"
+    "sqlite": "^2.2.4",
+    "sqlite3": "^4.0.0"
   },
   "devDependencies": {
     "babel-cli": "^6.18.0"

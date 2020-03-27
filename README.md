@@ -49,4 +49,4 @@ Examples are below:
 
 Once your database is populated, you need to add users to the system. Users aren't for authentication so much as ensuring we don't show the same pair to the same user multiple times. Currently, the system uses the __users__ table in the sqlite file, so add users there. Using sqlite, you can do it easily:
 
-	sqlite3 pairComp.sqlite3 'INSERT INTO users (userId, screenname, fname, lname) VALUES (1, "cbuntain", "Cody", "Buntain")'
+	sqlite3 pairComp.sqlite3 'INSERT INTO users (userId, screenname, password, fname, lname) VALUES (1, "cbuntain", "cb123", "Cody", "Buntain")'
