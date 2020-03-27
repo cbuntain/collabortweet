@@ -13,7 +13,7 @@ Usage:
          --data_path [tweet_file_path] --task_id [task_id]
 
 Arguments:
-    sqlite_path: sqlite database file (default `pairComp.sqlite3`)
+    sqlite_path: sqlite database file (default `database.sqlite3`)
     data_path: json file containing one tweet per line in twitter format
     task_id: id of the task the tweets shoud be added to
 '''

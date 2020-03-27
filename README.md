@@ -12,7 +12,7 @@ The framework is also designed to support multiple users and multiple tasks, but
 
 You should be able to use `npm install` to set up the server and download any dependencies. Then, `npm start` will run the server, which you can access (currently) at (http://localhost:3000). 
 
-Before starting the server, you need to set up the database. This can be done using the createSchema.sql file (e.g., `sqlite3 pairComp.sqlite3 < createSchema.sql`). Then, use the `tweets2sql.py` python script to populate the database.
+Before starting the server, you need to set up the database. This can be done using the createSchema.sql file (e.g., `sqlite3 database.sqlite3 < createSchema.sql`). Then, use the `tweets2sql.py` python script to populate the database.
 
 ### Creating Tasks
 
@@ -49,4 +49,4 @@ Examples are below:
 
 Once your database is populated, you need to add users to the system. Users aren't for authentication so much as ensuring we don't show the same pair to the same user multiple times. Currently, the system uses the __users__ table in the sqlite file, so add users there. Using sqlite, you can do it easily:
 
-	sqlite3 pairComp.sqlite3 'INSERT INTO users (userId, screenname, password, fname, lname) VALUES (1, "cbuntain", "cb123", "Cody", "Buntain")'
+	sqlite3 database.sqlite3 'INSERT INTO users (userId, screenname, password, fname, lname) VALUES (1, "cbuntain", "cb123", "Cody", "Buntain")'

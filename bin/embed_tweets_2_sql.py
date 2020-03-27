@@ -11,7 +11,7 @@ Author: Cody Buntain (creator), Fridolin Linder (modifications)
 Arguments:
     task_path: json file with task data (see collabortweet
         documentation)
-    sqlite_path: sqlite database file (default `pairComp.sqlite3`)
+    sqlite_path: sqlite database file (default `database.sqlite3`)
     data_path: json file containing one tweet per line in either twitter
         API format or GNIP format
 

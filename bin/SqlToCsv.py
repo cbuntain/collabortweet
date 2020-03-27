@@ -13,7 +13,7 @@ import pandas as pd
 
 # In[ ]:
 
-conn = sqlite3.connect('./pairComp.sqlite3')
+conn = sqlite3.connect('database.sqlite3')
 c = conn.cursor()
 
 
