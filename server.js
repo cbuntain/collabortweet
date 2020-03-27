@@ -10,6 +10,7 @@ var crypto = require('crypto');
 var cookieParser = require('cookie-parser');
 var flash = require('connect-flash');
 var fs = require('fs');
+
 var config_str = fs.readFileSync('CONFIG.json');
 var config = JSON.parse(config_str);
 
@@ -330,47 +331,47 @@ app.get('/taskStats/:taskId', function(req, res) {
 
 				taskDetails["labels"] = compDetails;
               
-              // Get the users who have labeled this task
-              var userLabelDetails = db.all("SELECT u.fname AS fname, u.lname AS lname, COUNT(*) as count \
-                    FROM users u \
-                        JOIN comparisons c ON u.userId=c.userId \
-                        JOIN pairs p ON p.pairId=c.pairId \
-                    WHERE p.taskId = ? \
-                    GROUP BY u.userId", taskId);
+        // Get the users who have labeled this task
+        var userLabelDetails = db.all("SELECT u.fname AS fname, u.lname AS lname, COUNT(*) as count \
+              FROM users u \
+                  JOIN comparisons c ON u.userId=c.userId \
+                  JOIN pairs p ON p.pairId=c.pairId \
+              WHERE p.taskId = ? \
+              GROUP BY u.userId", taskId);
 
-              taskDetails["userDetails"] = userLabelDetails;
+        taskDetails["userDetails"] = userLabelDetails;
 
-              // Pairwise comparisons don't have label options, so null this
-              taskDetails["labelOptions"] = null;
+        // Pairwise comparisons don't have label options, so null this
+        taskDetails["labelOptions"] = null;
 
 			} else if ( taskData.taskType == 2 ) {
 
-                var labelOptions = db.all("SELECT l.labelId AS lId, l.labelText AS lText \
-                    FROM labels l \
-                    WHERE l.taskId = ? \
-                    ORDER BY l.taskId", taskId);
+        var labelOptions = db.all("SELECT l.labelId AS lId, l.labelText AS lText, l.parentLabel AS lParent \
+            FROM labels l \
+            WHERE l.taskId = ? \
+            ORDER BY l.taskId", taskId);
 
-                taskDetails["labelOptions"] = labelOptions;
+        taskDetails["labelOptions"] = labelOptions;
 
-                var labelDetails = db.all("SELECT e.elementId AS eId, e.elementText AS eText, el.elementLabelId AS elId, u.userId AS uId, u.screenname AS screenname, l.labelId AS lId, l.labelText AS lText \
-                    FROM elements e \
-                        JOIN elementLabels el ON e.elementId = el.elementId \
-                        JOIN labels l ON el.labelId = l.labelId \
-                        JOIN users u ON u.userId = el.userId \
-                    WHERE e.taskId = ? \
-                    ORDER BY e.elementId", taskId);
+        var labelDetails = db.all("SELECT e.elementId AS eId, e.elementText AS eText, el.elementLabelId AS elId, u.userId AS uId, u.screenname AS screenname, l.labelId AS lId, l.labelText AS lText \
+            FROM elements e \
+                JOIN elementLabels el ON e.elementId = el.elementId \
+                JOIN labels l ON el.labelId = l.labelId \
+                JOIN users u ON u.userId = el.userId \
+            WHERE e.taskId = ? \
+            ORDER BY e.elementId", taskId);
 
-                taskDetails["labels"] = labelDetails;
-              
-              // Get the users who have labeled this task
-              var userLabelDetails = db.all("SELECT u.userId AS uId, u.fname AS fname, u.lname AS lname, COUNT(*) AS count \
-                    FROM users u \
-                        JOIN elementLabels el ON u.userId=el.userId \
-                        JOIN elements e ON el.elementId=e.elementId \
-                    WHERE e.taskId = ? \
-                    GROUP BY u.userId", taskId);
+        taskDetails["labels"] = labelDetails;
+        
+        // Get the users who have labeled this task
+        var userLabelDetails = db.all("SELECT u.userId AS uId, u.fname AS fname, u.lname AS lname, COUNT(*) AS count \
+              FROM users u \
+                  JOIN elementLabels el ON u.userId=el.userId \
+                  JOIN elements e ON el.elementId=e.elementId \
+              WHERE e.taskId = ? \
+              GROUP BY u.userId", taskId);
 
-              taskDetails["userDetails"] = userLabelDetails;
+        taskDetails["userDetails"] = userLabelDetails;
 
 			} else {
 				console.log("Unknown task type in taskStats/...");
@@ -436,7 +437,7 @@ app.get('/labelerView/:id', function (req, res) {
 
 			return Promise.all([
 				taskMap,
-				db.all('SELECT labelId, labelText FROM labels WHERE taskId = ?', requestedTask)
+				db.all('SELECT labelId, labelText, parentLabel FROM labels WHERE taskId = ?', requestedTask)
 			]);
 		})
 		.then(function(labelData) {
@@ -444,8 +445,45 @@ app.get('/labelerView/:id', function (req, res) {
 			var taskData = labelData[0];
 			var labelList = labelData[1];
 
-			console.log(labelList);
-			console.log(labelList.length);
+      // A map of label IDs and their related metadata
+      var labelMap = {};
+
+      // populate the label map and create a children array
+      labelList.forEach(element => {
+        element['children'] = new Array();
+        element['childrenIds'] = new Array();
+
+        labelMap[element['labelId']] = element;
+      });
+
+      // Populate list of children for each label
+      labelList.forEach(element => {
+        if ( element['parentLabel'] > 0 ) {
+          // Get the parent label from our map of labels
+          var parent = labelMap[element['parentLabel']];
+
+          // Add this element to the children list
+          parent['children'].push(element);
+          parent['childrenIds'].push(element['labelId']);
+        }
+      });
+
+      // Set the button index for each label
+      var topButtonIndex = 1;
+      labelList.forEach(element => {
+        if ( element['parentLabel'] < 1 ) {
+
+          element['buttonIndex'] = topButtonIndex;
+          topButtonIndex++;
+
+        }
+
+        var localButtonIndex = 1;
+        element['children'].forEach(child => {
+          child['buttonIndex'] = localButtonIndex;
+          localButtonIndex++;
+        });
+      });
 
 			dataMap = {
 				taskId: taskData.taskId,

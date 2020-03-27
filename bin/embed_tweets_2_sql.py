@@ -25,7 +25,7 @@ import itertools
 import random
 import argparse
 
-from utils import read_tweet
+from utils import read_tweet, insert_labels
 
 if __name__ == '__main__':
     # Store the commandline arguments passed to the script
@@ -132,13 +132,8 @@ if __name__ == '__main__':
     # If we are dealing with a labeling task (type == 2), insert the labels
     elif task_desc["type"] == 2:
 
-        print("Insert labels...")
-        label_list = [{"taskId": task_id, "labelText": x}
-                      for x in task_desc["labels"]]
-        print(label_list)
-
-        c.executemany('INSERT INTO labels (taskId, labelText) VALUES (:taskId,'
-                      ':labelText)', label_list)
+        print("Calling label insertion...")
+        insert_labels(c, task_desc["labels"], task_id)        
 
     # Otherwise, we have an invalid task type
     else:

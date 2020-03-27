@@ -26,10 +26,17 @@ html
 				- var labelItem = labels[labelIndex]
 				- labelIndex++
 
-				div(class="row text-center")
-					h4(class="btn btn-primary btn-lg selected-label", labelindex=labelIndex, labelid=labelItem.labelId)
-						u= labelIndex
-						span . #{labelItem.labelText}
+				if labelItem.parentLabel < 1
+					div(class="row text-center")
+						h4(class="btn btn-primary btn-lg ct-label selected-label", labelindex=labelItem.buttonIndex, labelid=labelItem.labelId, parentid=labelItem.parentLabel, data-childids=labelItem.childrenIds)
+							u= labelItem.buttonIndex
+							span . #{labelItem.labelText}
+				else
+					div(class="row text-center")
+						h4(class="btn btn-primary btn-lg ct-label hidden-label", labelindex=labelItem.buttonIndex, labelid=labelItem.labelId, parentid=labelItem.parentLabel, data-childids=labelItem.childrenIds)
+							u= labelItem.buttonIndex
+							span . #{labelItem.labelText}
+
 
 			//- Footer navigation
 				div(class="row navbar-fixed-bottom")

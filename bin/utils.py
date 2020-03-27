@@ -1,7 +1,8 @@
 '''Utilities to process tweets for import into the database
 
-Authors: Fridolin Linder
+Authors: Fridolin Linder, Cody Buntain
 '''
+import sqlite3
 import json
 import html
 import re
@@ -206,3 +207,28 @@ def read_tweet(tweet):
         out_html = default_html
 
     return out_html, tweet_id
+
+def insert_labels(cursor, label_list, task_id, parent_label=-1):
+
+    print("Inserting labels...")
+    if parent_label > 0:
+        print("\tSublabel of:", parent_label)
+
+    for label in label_list:
+
+        if isinstance(label, str):
+            cursor.execute(
+                'INSERT INTO labels (taskId, labelText, parentLabel) VALUES (:taskId, :labelText, :parentLabel)', 
+                {"taskId": task_id, "labelText": label, "parentLabel": parent_label}
+                )
+
+        elif isinstance(label, dict):
+            for label_text, sublabels in label.items():
+                cursor.execute(
+                    'INSERT INTO labels (taskId, labelText, parentLabel) VALUES (:taskId, :labelText, :parentLabel)', 
+                    {"taskId": task_id, "labelText": label_text, "parentLabel": parent_label}
+                    )
+                this_parent_label = cursor.lastrowid
+
+                insert_labels(cursor, sublabels, task_id, this_parent_label)
+

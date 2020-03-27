@@ -25,7 +25,7 @@ Examples are below:
 #### Comparison Task Description JSON
 
 	{
-		"name": "Nigeria 2014 - Negativity Comparisons",
+		"name": "Election Content - Negativity Comparisons",
 		"question": "Which of these tweets seems more emotionally negative?",
 		"type": 1
 	}
@@ -33,15 +33,21 @@ Examples are below:
 #### Labeling Task Description JSON
 
 	{
-		"name": "Nigeria 2015 - Relevance Labels",
-		"question": "Is this tweet relevant to the Nigerian 2015 election?",
+		"name": "Election Content - Relevance Labels",
+		"question": "Is this tweet relevant to the current election?",
 		"type": 2,
-		"labels": [
-			"Relevant",
-			"Not Relevant",
-			"Not English",
-			"Can't Decide"
-		]
+	    "labels": [
+	        {"Relevant": [
+	            "Pro-Government",
+	            {"Pro-Opposition": [
+	                "Pro Opp Candidate 1",
+	                "Pro Opp Candidate 2",
+	            ]}
+	        ]},
+	        "Not Relevant",
+	        "Not English",
+	        "Can't Decide"
+	    ]
 	}
 
 
