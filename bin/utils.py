@@ -166,6 +166,7 @@ def read_tweet(tweet):
                        'Quoted text: {quoted_text}</pre>'),
         'retweet_of_quotetweet': ('<pre>Tweet type: {type}</br>'
                                   'Author: {author}</br>'
+                                  'Tweet text: {text}</br>'
                                   'Retweeted author: {retweeted_author}</br>'
                                   'Retweeted text: {retweeted_text}</br>'
                                   'Quoted author: {quoted_author}</br>'

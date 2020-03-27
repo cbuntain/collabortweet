@@ -61,6 +61,19 @@ if __name__ == '__main__':
             except json.JSONDecodeError:
                 print('Json decode error in line {}. Skipped'.format(i))
                 continue
+
+            # CB 20200326: Adding this check to remove instances
+            #  where we have a retweeted_status and quoted_status
+            #  field but they are NONE. This can happen if the data
+            #  source of the tweets embed these fields because some
+            #  tweets have them. E.g., Pandas does this when you read
+            #  in tweets to a DataFrame and then export them to JSON
+            if "retweeted_status" in tweet and tweet["retweeted_status"] is None:
+                tweet.pop("retweeted_status")
+            if "quoted_status" in tweet and tweet["quoted_status"] is None:
+                tweet.pop("quoted_status")
+
+            # Now process the tweet as normal
             tweet_html, tweet_id = read_tweet(tweet)
 
             if tweet_html is None:
