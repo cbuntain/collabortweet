@@ -45,6 +45,18 @@ with codecs.open(tweetPath, "r", "utf8") as inFile:
 	for line in inFile:
 		tweet = json.loads(line)
 
+        # CB 20200326: Adding this check to remove instances
+        #  where we have a retweeted_status and quoted_status
+        #  field but they are NONE. This can happen if the data
+        #  source of the tweets embed these fields because some
+        #  tweets have them. E.g., Pandas does this when you read
+        #  in tweets to a DataFrame and then export them to JSON
+        if "retweeted_status" in tweet and tweet["retweeted_status"] is None:
+            tweet.pop("retweeted_status")
+        if "quoted_status" in tweet and tweet["quoted_status"] is None:
+            tweet.pop("quoted_status")
+
+        # Now process the tweet as normal
 		(tweetText, tweetId) = readTweet(tweet)
 
 		if ( tweetText == None ):
