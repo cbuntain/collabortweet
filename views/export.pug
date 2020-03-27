@@ -1,0 +1,46 @@
+//- index.pug
+doctype html
+html
+	head
+		include includes/head.pug
+	body
+		include includes/nav.pug
+
+		<!-- Main jumbotron -->
+		div(class="jumbotron")
+			div(class="container")
+				h2 Select the task to export.
+		
+		//- Display options
+		div(class="container")
+			if dataMap.pairTasks.length > 0
+				h2 Available Comparison Tasks:
+				each v in dataMap.pairTasks
+					div(class="row")
+						div(class="panel panel-default")
+
+							div(class="panel-heading") 
+								h4 
+									a(href="/json/" + v.taskId) Task #{v.taskId}: #{v.taskName}
+
+							div(class="panel-body")
+								p Comparisons Answered: #{v.counter}
+								p #{v.question}
+
+			if dataMap.labelTasks.length > 0
+				h2 Available Labeling Tasks:
+				each v in dataMap.labelTasks
+					div(class="row")
+						div(class="panel panel-default")
+
+							div(class="panel-heading") 
+								h4 
+									a(href="/json/" + v.taskId) Task #{v.taskId}: #{v.taskName}
+
+							div(class="panel-body")
+								p Elements to Label: #{v.eCount}
+								p Labels Provided: #{v.labelCount}
+								p #{v.question}
+
+
+		include includes/jsFooter.pug

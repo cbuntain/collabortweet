@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS elements (
 	elementId INTEGER PRIMARY KEY,
 	elementText TEXT NOT NULL,
 	taskId INTEGER NOT NULL,
-	externalId INTEGER
+	externalId TEXT
 );
 
 CREATE TABLE IF NOT EXISTS labels (
