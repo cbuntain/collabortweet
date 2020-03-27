@@ -1,7 +1,5 @@
 // Call when the document is ready
 $( document ).ready(function() {
-    console.log( "ready!" );
-
     loadDataElements();
 });
 
@@ -16,7 +14,49 @@ var updateSelectedElement = function(elementLabelId, labelId) {
     })
 }
 
+var handleNavClick = function(pageSize, pageCursor) {
+
+    var rowCount = $('.reviewable-row').length;
+
+    $('.reviewable-row').each(function() {
+        var thisRowId = $(this).attr("rowindex");
+
+        if ( thisRowId >= ((pageCursor - 1) * pageSize) && thisRowId < (pageCursor * pageSize) ) {
+            $(this).show();
+        } else {
+            $(this).hide();
+        }
+    });
+
+    if ( pageCursor <= 1 ) {
+        $('#pre-button').addClass("disabled");
+    } else {
+        $('#pre-button').removeClass("disabled");
+        $('#pre-button').off("click").click(function() {
+           handleNavClick(pageSize, pageCursor - 1);
+        });
+    }
+
+    if ( pageCursor * pageSize >= rowCount ) {
+        $('#next-button').addClass("disabled");
+    } else {
+        $('#next-button').removeClass("disabled");
+        $('#next-button').off("click").click(function() {
+           handleNavClick(pageSize, pageCursor + 1);
+        });
+    }
+}
+
 var loadDataElements = function() {
+
+    var pageSize = 10;
+    var pageCursor = 1;
+
+    handleNavClick(pageSize, pageCursor);    
+
+    $('#next-button').off("click").click(function() {
+       handleNavClick(pageSize, pageCursor + 1);
+    });
 
     $('.update-label').each(function() {
         // The element-label ID pair is part of the form...
