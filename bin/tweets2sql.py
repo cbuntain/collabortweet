@@ -8,6 +8,8 @@ import codecs
 import itertools
 import random
 
+from utils import insert_labels
+
 taskDescPath = sys.argv[1]
 sqlitePath = sys.argv[2]
 tweetPath = sys.argv[3]
@@ -45,18 +47,18 @@ with codecs.open(tweetPath, "r", "utf8") as inFile:
 	for line in inFile:
 		tweet = json.loads(line)
 
-        # CB 20200326: Adding this check to remove instances
-        #  where we have a retweeted_status and quoted_status
-        #  field but they are NONE. This can happen if the data
-        #  source of the tweets embed these fields because some
-        #  tweets have them. E.g., Pandas does this when you read
-        #  in tweets to a DataFrame and then export them to JSON
-        if "retweeted_status" in tweet and tweet["retweeted_status"] is None:
-            tweet.pop("retweeted_status")
-        if "quoted_status" in tweet and tweet["quoted_status"] is None:
-            tweet.pop("quoted_status")
+		# CB 20200326: Adding this check to remove instances
+		#  where we have a retweeted_status and quoted_status
+		#  field but they are NONE. This can happen if the data
+		#  source of the tweets embed these fields because some
+		#  tweets have them. E.g., Pandas does this when you read
+		#  in tweets to a DataFrame and then export them to JSON
+		if "retweeted_status" in tweet and tweet["retweeted_status"] is None:
+			tweet.pop("retweeted_status")
+		if "quoted_status" in tweet and tweet["quoted_status"] is None:
+			tweet.pop("quoted_status")
 
-        # Now process the tweet as normal
+		# Now process the tweet as normal
 		(tweetText, tweetId) = readTweet(tweet)
 
 		if ( tweetText == None ):
@@ -120,11 +122,7 @@ if ( taskDesc["type"] == 1 ):
 elif ( taskDesc["type"] == 2 ):
 
 	print ("Insert labels...")
-	labelList = [{"taskId": taskId, "labelText": x} for x in taskDesc["labels"]]
-	print (labelList)
-	
-	c.executemany('INSERT INTO labels (taskId, labelText) VALUES (:taskId,:labelText)', 
-		labelList)
+	insert_labels(c, taskDesc["labels"], taskId)
 
 # Otherwise, we have an invalid task type
 else:
