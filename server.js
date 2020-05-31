@@ -497,17 +497,41 @@ app.get('/json/:taskId', function(req, res) {
 })
 
 // Send a list of the tasks
-app.get('/taskView', function(req, res) {
-	db.all('SELECT taskId, taskName, question, taskType FROM tasks ORDER BY taskId')
-		.then(function(taskData) {
-			dataMap = {
-				tasks: taskData, 
-				authorized: req.session.user ? true : false,
-				user: req.session.user,
-			}
+app.get('/taskView', function (req, res) {
 
-			res.render('taskView', dataMap)
-		});
+    if (req.session.user['isadmin']) {
+        db.all('SELECT taskId, taskName, question, taskType FROM tasks t\
+            ORDER BY t.taskId')
+            .then(function (taskData) {
+                dataMap = {
+                    tasks: taskData,
+                    authorized: req.session.user ? true : false,
+                    user: req.session.user,
+                }
+
+                console.log(dataMap);
+
+                res.render('taskView', dataMap)
+            });
+    }
+    else {
+        db.all('SELECT taskId, taskName, question, taskType FROM tasks t \
+           JOIN assignedTasks at ON t.taskId = at.assignedTaskId \
+            WHERE at.userId = ?  \
+            ORDER BY t.taskId',
+            req.session.user.userId)
+            .then(function (taskData) {
+                dataMap = {
+                    tasks: taskData,
+                    authorized: req.session.user ? true : false,
+                    user: req.session.user,
+                }
+
+                console.log(dataMap);
+
+                res.render('taskView', dataMap)
+            });
+    }
 })
 
 

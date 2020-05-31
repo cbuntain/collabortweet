@@ -47,8 +47,8 @@ if __name__ == '__main__':
     fields = (taskId,userID,taskId,userID,) 
 
     # Assign user a task ID
-    c.execute("INSERT INTO assignedTasks(taskId,userId) SELECT ?, ?" 
-        "WHERE NOT EXISTS(SELECT 1 FROM assignedTasks WHERE taskId = ? AND userId = ?)", fields)
+    c.execute("INSERT INTO assignedTasks(assignedTaskId,userId) SELECT ?, ?" 
+        "WHERE NOT EXISTS(SELECT 1 FROM assignedTasks WHERE assignedTaskId = ? AND userId = ?)", fields)
 
     # Commit
     conn.commit()
