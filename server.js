@@ -174,14 +174,29 @@ app.get('/taskStats', function(req, res) {
 		GROUP BY t.taskId \
 		ORDER BY t.taskId")
 		.then(function(pairTaskData) {
+            var labelTaskData = ''
 
-			var labelTaskData = db.all("SELECT t.taskId, t.taskName, t.question, COUNT(DISTINCT(e.elementId)) AS eCount, COUNT(el.elementLabelId) AS labelCount \
+            if (!req.session.user.isadmin) {
+                labelTaskData = db.all("SELECT t.taskId, t.taskName, t.question, COUNT(DISTINCT(e.elementId)) AS eCount, COUNT(el.elementLabelId) AS labelCount \
+				FROM tasks t \
+					LEFT OUTER JOIN elements e ON t.taskId = e.taskId \
+					LEFT OUTER JOIN elementLabels el ON e.elementId = el.elementId \
+                    JOIN assignedTasks at ON t.taskId = at.assignedTaskId \
+				WHERE t.taskType == 2 \
+                AND at.userId == ? \
+				GROUP BY t.taskId \
+				ORDER BY t.taskId",
+                    req.session.user.userId);
+            }
+            else {
+                labelTaskData = db.all("SELECT t.taskId, t.taskName, t.question, COUNT(DISTINCT(e.elementId)) AS eCount, COUNT(el.elementLabelId) AS labelCount \
 				FROM tasks t \
 					LEFT OUTER JOIN elements e ON t.taskId = e.taskId \
 					LEFT OUTER JOIN elementLabels el ON e.elementId = el.elementId \
 				WHERE t.taskType == 2 \
 				GROUP BY t.taskId \
 				ORDER BY t.taskId");
+            }
 
 			return Promise.all([
 				pairTaskData,
@@ -500,7 +515,7 @@ app.get('/json/:taskId', function(req, res) {
 app.get('/taskView', function (req, res) {
 
     if (req.session.user['isadmin']) {
-        db.all('SELECT taskId, taskName, question, taskType FROM tasks t\
+        db.all('SELECT taskId, taskName, question, taskType FROM tasks t \
             ORDER BY t.taskId')
             .then(function (taskData) {
                 dataMap = {
