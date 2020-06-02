@@ -451,7 +451,109 @@ app.get('/export', function(req, res) {
     });
 })
 
-// Detailed view for a given task
+// CSV Detailed view for a given task
+app.get('/csv/:taskId', function (req, res) {
+    var taskId = req.params.taskId;
+    var comp = false;
+
+    db.get("SELECT taskName, question, taskType FROM tasks WHERE taskId = ?", taskId)
+        .then(function (taskData) {
+
+            var taskDetails = {
+                taskInfo: taskData
+            };
+
+            if (taskData.taskType == 1) {
+
+                var compDetails = db.all("SELECT c.decision, \
+            e1.elementId AS lId, e1.elementText AS lText, e1.externalId AS lExt, \
+            e2.elementId AS rId, e2.elementText AS rText, e2.externalId AS rExt \
+          FROM pairs p \
+            JOIN elements AS e1 ON e1.elementId = p.leftElement \
+            JOIN elements AS e2 ON e2.elementId = p.rightElement \
+            JOIN comparisons c ON p.pairId = c.pairId \
+          WHERE p.taskId = ?", taskId);
+
+                taskDetails["labels"] = compDetails;
+
+                comp = true;
+
+            } else if (taskData.taskType == 2) {
+
+                var labelDetails = db.all("SELECT \
+              e.elementId AS elementId, \
+              e.externalId externalId, \
+              e.elementText AS elementText, \
+              el.elementLabelId AS chosenLabel, \
+              u.userId AS labelerId, \
+              u.screenname AS labelerScreenname, \
+              l.labelId AS labelId, \
+              l.labelText AS labelText \
+            FROM elements e \
+                JOIN elementLabels el ON e.elementId = el.elementId \
+                JOIN labels l ON el.labelId = l.labelId \
+                JOIN users u ON u.userId = el.userId \
+            WHERE e.taskId = ? \
+            ORDER BY e.elementId", taskId);
+
+                taskDetails["labels"] = labelDetails;
+
+            } else {
+                console.log("Unknown task type in json/...");
+                taskDetails.push({ empty: true });
+            }
+
+            return Promise.props(taskDetails);
+        })
+        .then(function (taskInfoMap) {
+
+            var taskDetails = taskInfoMap["labels"];
+            var taskCSVToSend = "";
+
+            if (comp) {
+                taskCSVToSend = 'lId,lText,lExt,rId,rText,rExt\n';
+
+                var concatStr = '';
+
+                taskDetails.forEach(function (index) {
+                    concatStr = (index['lId'] + ',' +
+                        index['lText'] + ',' +
+                        index['lExt'] + ',' +
+                        index['rId'] + ',' +
+                        index['rText'] + ',' +
+                        index['rExt']);
+
+                    taskCSVToSend += concatStr + '\n'; 
+                })
+            }
+            else {
+                taskCSVToSend = 'elementId,externalId,chosenLabel,labelerId,lablerScreenname,labelId,labelText\n';
+
+                var concatStr = '';
+
+                taskDetails.forEach(function (index) {
+
+                    concatStr = index['elementId'] + ',' +
+                        index['externalId'] + ',' +
+                        index['chosenLabel'] + ',' +
+                        index['labelerId'] + ',' +
+                        index['labelerScreenname'] + ',' +
+                        index['labelId'] + ',' +
+                        index['labelText'];
+
+                    taskCSVToSend += concatStr + '\n'; 
+                })
+            }
+
+
+            res.set('Content-Type', 'text/csv');
+            res.attachment('Task' + taskId + '.csv');
+            res.send(taskCSVToSend);
+        });
+})
+
+
+// JSON Detailed view for a given task
 app.get('/json/:taskId', function(req, res) {
   var taskId = req.params.taskId
 
@@ -494,7 +596,6 @@ app.get('/json/:taskId', function(req, res) {
             ORDER BY e.elementId", taskId);
 
         taskDetails["labels"] = labelDetails;
-
 
       } else {
         console.log("Unknown task type in json/...");

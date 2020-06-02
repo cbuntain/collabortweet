@@ -35,7 +35,12 @@ html
 
 							div(class="panel-heading") 
 								h4 
-									a(href="/json/" + v.taskId) Task #{v.taskId}: #{v.taskName}
+									Task #{v.taskId}: #{v.taskName}
+										ul.list-unstyled
+											li
+												a.text-white(href="/json/" + v.taskId) JSON
+											li
+												a.text-white(href="/csv/" + v.taskId) CSV
 
 							div(class="panel-body")
 								p Elements to Label: #{v.eCount}
