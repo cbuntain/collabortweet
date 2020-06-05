@@ -1,3 +1,11 @@
+CREATE TABLE IF NOT EXISTS assignedTasks ( 
+	id INTEGER PRIMARY KEY, 
+	userId INTEGER NOT NULL, 
+	assignedTaskId INTEGER NOT NULL, 
+	CONSTRAINT userId_fkey FOREIGN KEY (userId) REFERENCES users (userId), 
+	CONSTRAINT taskId_fkey FOREIGN KEY (assignedTaskId) REFERENCES tasks (taskId)
+);
+
 CREATE TABLE IF NOT EXISTS tasks (
 	taskId INTEGER PRIMARY KEY,
 	taskName TEXT,
