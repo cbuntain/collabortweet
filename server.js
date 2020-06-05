@@ -91,23 +91,34 @@ var getRandomElement = function(arr) {
 // Root view
 app.get('/', function (req, res) {
 
+  if ( !("user" in req.session) || req.session.user === null ) {
+
     req.session.user = null;
 
-	// Call the user records function on the database to get a list of users
-	userDb.users.getUsers(db, function(userData) {
+    // Call the user records function on the database to get a list of users
+    userDb.users.getUsers(db, function(userData) {
 
-		console.log("Successfully retrieved users...");
-		// console.log(userData);
+      console.log("Successfully retrieved users...");
+      // console.log(userData);
 
-		dataMap = {
-			pageTitle: 'Welcome', 
-			message: 'Hello there!',
-			authorized: false,
-			userList: userData,
-		}
+      dataMap = {
+        pageTitle: 'Welcome', 
+        message: 'Hello there!',
+        authorized: false,
+        userList: userData,
+      }
 
-		res.render('index', dataMap)
-	})
+      res.render('index', dataMap)
+    })
+  
+  } else {
+
+    console.log("User is already logged in...");
+    res.redirect('/taskView')
+
+  }
+
+
 })
 
 // Login
@@ -166,6 +177,15 @@ app.post('/login', passport.authenticate('local', {
 
 // Send a list of the tasks for inspection
 app.get('/taskStats', function(req, res) {
+
+  if ( !("user" in req.session) || req.session.user === null ) {
+
+    console.log("User is not logged in...");
+    res.redirect('/')
+
+    return;
+  }
+
 	db.all("SELECT t.taskId, t.taskName, t.question, COUNT(c.compareId) AS counter \
 		FROM tasks t \
 			LEFT OUTER JOIN pairs p ON t.taskId = p.taskId \
@@ -324,6 +344,15 @@ var calculateAgreement = function(taskInfo, taskDetails, userDetails) {
 
 // Detailed view for a given task
 app.get('/taskStats/:taskId', function(req, res) {
+
+  if ( !("user" in req.session) || req.session.user === null ) {
+
+    console.log("User is not logged in...");
+    res.redirect('/')
+
+    return;
+  }
+
 	var taskId = req.params.taskId
 
 	db.get("SELECT taskName, question, taskType FROM tasks WHERE taskId = ?", taskId)
@@ -612,7 +641,12 @@ app.get('/json/:taskId', function(req, res) {
 // Send a list of the tasks
 app.get('/taskView', function (req, res) {
 
-    if (req.session.user['isadmin']) {
+  if ( !("user" in req.session) || req.session.user === null ) {
+
+    console.log("User is not logged in...");
+    res.redirect('/')
+
+  } else if (req.session.user['isadmin']) {
         db.all('SELECT taskId, taskName, question, taskType FROM tasks t \
             ORDER BY t.taskId')
             .then(function (taskData) {
@@ -650,6 +684,14 @@ app.get('/taskView', function (req, res) {
 
 // Send the view for doing labeling
 app.get('/labelerView/:id', function (req, res) {
+
+  if ( !("user" in req.session) || req.session.user === null ) {
+
+    console.log("User is not logged in...");
+    res.redirect('/')
+    
+    return;
+  }
 
 	// Store the task ID in the session
 	var requestedTask = req.params.id
