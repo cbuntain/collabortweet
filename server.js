@@ -484,7 +484,6 @@ app.get('/csv/:taskId', function (req, res) {
               e.elementId AS elementId, \
               e.externalId externalId, \
               e.elementText AS elementText, \
-              el.elementLabelId AS chosenLabel, \
               u.userId AS labelerId, \
               u.screenname AS labelerScreenname, \
               l.labelId AS labelId, \
@@ -527,7 +526,7 @@ app.get('/csv/:taskId', function (req, res) {
                 })
             }
             else {
-                taskCSVToSend = 'elementId,externalId,chosenLabel,labelerId,lablerScreenname,labelId,labelText\n';
+                taskCSVToSend = 'elementId,externalId,labelerId,lablerScreenname,labelId,labelText\n';
 
                 var concatStr = '';
 
@@ -535,7 +534,6 @@ app.get('/csv/:taskId', function (req, res) {
 
                     concatStr = index['elementId'] + ',' +
                         index['externalId'] + ',' +
-                        index['chosenLabel'] + ',' +
                         index['labelerId'] + ',' +
                         index['labelerScreenname'] + ',' +
                         index['labelId'] + ',' +
@@ -583,7 +581,6 @@ app.get('/json/:taskId', function(req, res) {
               e.elementId AS elementId, \
               e.externalId externalId, \
               e.elementText AS elementText, \
-              el.elementLabelId AS chosenLabel, \
               u.userId AS labelerId, \
               u.screenname AS labelerScreenname, \
               l.labelId AS labelId, \
