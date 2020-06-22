@@ -20,31 +20,25 @@ html
 					div(class="panel-body")
 						div(id="element-content-panel")
 
-			- var rangeQuestionCount = ranges.length
-			- var questionIndex = 0
+			each rangeQuestionObject, rangeQuestionId in ranges
+				- var rangeQuestionObject = ranges[rangeQuestionId]
+				- var rangeQuestion = rangeQuestionObject["rangeQuestion"]
 
-			while questionIndex < rangeQuestionCount
-				- var rangeQuestions = ranges[questionIndex]
-				- questionIndex++
+				div(class="row text-left rangeQuestionContainer")
+					h4 #{rangeQuestion} :
+					h5 Pick from #{rangeQuestionObject["scale"].length}
 
-				div(class="row text-center" id="rangeQuestionContainer")
-					h4 . #{rangeQuestion}
-						each question in rangeQuestions 
-							- var scaleIndex = 0
-							div(class="t-label collapse")
-				
-								span(
-									id="rangeQuestion"#{questionIndex}
-
-									each scaleVal in rangeScales
-										- scaleIndex++
-										input(
-												type="radio"
-												id=#{questionIndex+scaleIndex}//-Questionable
-												name=scaleVal
-												value=#{scaleIndex}
-										)
+					span(id="rangeQuestion" + rangeQuestionId)
+						each scale in rangeQuestionObject["scale"] 
+							p #{scale["rangeScaleValue"]}
+								input(
+										type="radio"
+										id=rangeQuestionId + "-" + scale["rangeScaleId"]
+										name=rangeQuestionId + "-" + scale["rangeScaleId"]
+										value=scale["rangeScaleValue"]
 								)
+
+
 
 
 			//- Footer navigation

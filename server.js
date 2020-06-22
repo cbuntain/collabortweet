@@ -684,7 +684,7 @@ app.get('/rangeView/:id', function (req, res) {
 
             return Promise.all([
                 taskMap,
-                db.all('SELECT rq.rangeQuestion, rs.rangeValue, rs.rangeOrder \
+                db.all('SELECT rq.rangeQuestionId, rq.rangeQuestion, rs.rangeScaleId, rs.rangeValue, rs.rangeOrder \
                         FROM rangeQuestions rq JOIN rangeScales rs \
                         ON rq.rangeQuestionId = rs.rangeQuestionId \
                         WHERE taskId=? \
@@ -693,33 +693,36 @@ app.get('/rangeView/:id', function (req, res) {
         })
 		.then(function(rangeData) {
 
-            
+      var taskData = rangeData[0];
+      var rangeQuestionList = rangeData[1];
 
-            var taskData = rangeData["name"];
-            var rangeQuestionList = rangeData[1];
-            var rangeScalesList = '';
+      console.log("Result: ");
+      console.log(taskData);
+      console.log({rangeQuestionList});
 
-            console.log("Result: ");
-            console.log({rangeQuestionList});
+      var rangeQuestionMap = {};
 
-      // populate the label map and create a children array
-     /* rangeQuestionList.forEach(element => {
-          console.log("Question: \n");
-          console.log({ element });
+      rangeQuestionList.forEach(element => {
+        var rqId = element["rangeQuestionId"];
+
+        if (!(rqId in rangeQuestionMap)) {
+          rangeQuestionMap[rqId] = {
+            "rangeQuestion": element["rangeQuestion"],
+            "scale": new Array(),
+          }
+        }
+
+        var thisRangeQuestion = rangeQuestionMap[rqId];
+        thisRangeQuestion["scale"].push({
+          "rangeScaleId": element["rangeScaleId"],
+          "rangeScaleValue": element["rangeValue"],
+        });
       });
-
-            rangeScalesList.forEach(list => {
-                list.forEach(element => {
-                    console.log("Scale: \n")
-                    console.log({ element });
-                });
-            });*/
 
 			dataMap = {
 				taskId: taskData.taskId,
 				taskName: taskData.taskName, 
-				ranges: rangeQuestionList,
-				rangeScales: rangeScalesList,
+				ranges: rangeQuestionMap,
 				authorized: req.session.user ? true : false,
 				user: req.session.user,
 			}
