@@ -232,3 +232,22 @@ def insert_labels(cursor, label_list, task_id, parent_label=-1):
 
                 insert_labels(cursor, sublabels, task_id, this_parent_label)
 
+def insert_ranges(cursor, task_id, name, questions):
+        if len(questions) > 0:
+                for question in questions:
+                        scaleSep = ","
+                        scale = scaleSep.join(str(question["scale"]))
+
+                        print(scale)
+
+                        data = [question["question"], task_id]
+
+                        cursor.execute('INSERT INTO rangeQuestions (rangeQuestion, taskId) VALUES (?,?)', data)
+                        tempId = cursor.lastrowid
+
+                        i = 1
+                        for val in question["scale"]:
+                                rangeVals = [tempId, val, i]
+                                cursor.execute('INSERT INTO rangeScales (rangeQuestionId, rangeValue, rangeOrder) VALUES (?,?,?)', rangeVals)
+                                i += 1
+                print("Done inserting range task")

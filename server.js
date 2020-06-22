@@ -579,7 +579,7 @@ app.get('/json/:taskId', function(req, res) {
 
       } else if ( taskData.taskType == 2 ) {
 
-        var labelDetails = db.all("SELECT \
+          var labelDetails = db.all("SELECT \
               e.elementId AS elementId, \
               e.externalId externalId, \
               e.elementText AS elementText, \
@@ -597,7 +597,21 @@ app.get('/json/:taskId', function(req, res) {
 
         taskDetails["labels"] = labelDetails;
 
-      } else {
+      }
+      else if (taskData.taskType == 3){
+          var rangeDetails = db.all("SELECT \
+                rq.rangeQuestionId, \
+                rq.rangeQuestion, \
+                rs.rangeValue \
+                FROM rangeQuestions rq, \
+                rangeScales rs \
+                WHERE rq.taskId = ? \
+                ORDER BY rs.rangeOrder; "
+              , taskId)
+
+          taskDetails["labels"] = rangeDetails;
+    }
+    else {
         console.log("Unknown task type in json/...");
         taskDetails.push({ empty : true });
       }
@@ -650,6 +664,129 @@ app.get('/taskView', function (req, res) {
     }
 })
 
+
+// Send the view for doing labeling
+app.get('/rangeView/:id', function (req, res) {
+
+	// Store the task ID in the session
+	var requestedTask = req.params.id
+	req.session.taskId = requestedTask
+
+	var currentUser = req.session.user
+	console.log("Current User Session: " + currentUser.screenname)
+
+    db.get('SELECT taskName, question FROM tasks WHERE taskId = ?', requestedTask)
+        .then(function (taskData) {
+            taskMap = {
+                taskId: requestedTask,
+                taskName: taskData.taskName,
+            }
+
+            return Promise.all([
+                taskMap,
+                db.all('SELECT rq.rangeQuestion, rs.rangeValue, rs.rangeOrder \
+                        FROM rangeQuestions rq JOIN rangeScales rs \
+                        ON rq.rangeQuestionId = rs.rangeQuestionId \
+                        WHERE taskId=? \
+                        ORDER BY rs.rangeOrder', requestedTask)
+            ]);
+        })
+		.then(function(rangeData) {
+
+            
+
+            var taskData = rangeData["name"];
+            var rangeQuestionList = rangeData[1];
+            var rangeScalesList = '';
+
+            console.log("Result: ");
+            console.log({rangeQuestionList});
+
+      // populate the label map and create a children array
+     /* rangeQuestionList.forEach(element => {
+          console.log("Question: \n");
+          console.log({ element });
+      });
+
+            rangeScalesList.forEach(list => {
+                list.forEach(element => {
+                    console.log("Scale: \n")
+                    console.log({ element });
+                });
+            });*/
+
+			dataMap = {
+				taskId: taskData.taskId,
+				taskName: taskData.taskName, 
+				ranges: rangeQuestionList,
+				rangeScales: rangeScalesList,
+				authorized: req.session.user ? true : false,
+				user: req.session.user,
+			}
+
+			res.render('rangeView', dataMap)
+		});
+})
+
+// Send a tweet for labeling
+app.get('/range', function(req, res) {
+
+	// Pull the task from the session
+	var requestedTask = req.session.taskId
+
+	console.log("New item requested!");
+
+	var localUser = req.session.user;
+	console.log("Local User:");
+	console.log(localUser);
+
+	// Get a set of candidate elements
+	db.all('SELECT elementId, elementText \
+		FROM elements e \
+		WHERE taskId = ? AND \
+		(SELECT COUNT(*) \
+			FROM elementLabels el \
+			WHERE el.elementId = e.elementId \
+			AND el.userId = ?) == 0 \
+	 	LIMIT 10', [requestedTask, localUser.userId])
+		.then(function(elements) {
+
+			if ( elements.length > 0 ) {
+				var targetElement = getRandomElement(elements);
+				console.log("Target Element: " + targetElement);
+				console.log("\t" + targetElement["elementId"]);
+				console.log("\t" + targetElement["elementText"]);
+
+				res.setHeader('Content-Type', 'application/json');
+				res.send(JSON.stringify(targetElement));
+			} else {
+				console.log("Done!");
+
+				res.setHeader('Content-Type', 'application/json');
+				res.send(JSON.stringify({ empty: true }));
+			}
+		});
+
+})
+
+// Receive a tweet label
+app.post('/range', function(req, res) {
+	console.log("Body: " + req.body);
+	console.log("\telement: " + req.body.element);
+	console.log("\tselected: " + req.body.selected);
+	console.log("\tUser ID: " + req.session.user.userId);
+
+	var elementId = req.body.element;
+	var userId = req.session.user.userId;
+	var decision = req.body.selected;
+
+	db.get('INSERT INTO elementLabels (elementId, userId, labelId) \
+		VALUES (:elementId, :userId, :decision)', [elementId, userId, decision])
+		.then(function() {
+			console.log("Decision logged...");
+			res.end();
+		});
+})
 
 // Send the view for doing labeling
 app.get('/labelerView/:id', function (req, res) {

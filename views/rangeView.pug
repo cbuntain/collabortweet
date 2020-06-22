@@ -1,0 +1,69 @@
+//- pairView.pug
+doctype html
+html
+	head
+		include includes/head.pug
+	body
+		include includes/nav.pug
+
+		<!-- Main jumbotron -->
+		div(class="jumbotron")
+			div(class="container")
+				h2 #{taskName} Question:
+				p #{question}
+
+		//- Display options
+		div(class="container")
+
+			div(class="row")
+				div(class="panel panel-default")
+					div(class="panel-body")
+						div(id="element-content-panel")
+
+			- var rangeQuestionCount = ranges.length
+			- var questionIndex = 0
+
+			while questionIndex < rangeQuestionCount
+				- var rangeQuestions = ranges[questionIndex]
+				- questionIndex++
+
+				div(class="row text-center" id="rangeQuestionContainer")
+					h4 . #{rangeQuestion}
+						each question in rangeQuestions 
+							- var scaleIndex = 0
+							div(class="t-label collapse")
+				
+								span(
+									id="rangeQuestion"#{questionIndex}
+
+									each scaleVal in rangeScales
+										- scaleIndex++
+										input(
+												type="radio"
+												id=#{questionIndex+scaleIndex}//-Questionable
+												name=scaleVal
+												value=#{scaleIndex}
+										)
+								)
+
+
+			//- Footer navigation
+				div(class="row navbar-fixed-bottom")
+					div(class=".col-md-6")
+						ol(class="breadcrumb")
+							li(id="prevCrumb")
+							li(class="active") Current
+							li(id="prevCrumb")
+
+			div(class="modal fade", id="loadingDialog", tabindex="-1" role="dialog")
+				div(class="modal-dialog", role="document")
+					div(class="modal-content")
+						div(class="modal-header")
+							h4(class="modal-title") Please Wait...
+						div(class="modal-body text-center")
+							img(src="/static/imgs/spinner.gif")
+
+		include includes/jsFooter.pug
+
+		<!-- Script for running the pair viewport -->
+		script(src="/static/js/rangeview.js")

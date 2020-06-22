@@ -58,6 +58,20 @@ CREATE TABLE IF NOT EXISTS comparisons (
 	decision INTEGER NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS rangeQuestions(
+	rangeQuestionId INTEGER PRIMARY KEY,
+	rangeQuestion TEXT NOT NULL,
+	taskId INTEGER NOT NULL,
+	decision INTEGER
+);
+
+CREATE TABLE IF NOT EXISTS rangeScales(
+	rangeScaleId INTEGER PRIMARY KEY,
+	rangeQuestionId INTEGER NOT NULL,
+	rangeValue TEXT NOT NULL,
+	rangeOrder INTEGER NOT NULL
+);
+
 CREATE VIEW pairChoices AS SELECT
 	els.elementId AS elementId, els.taskId as taskId, COUNT(cps.compareId) AS counter
 	FROM 

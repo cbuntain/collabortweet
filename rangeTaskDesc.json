@@ -1,0 +1,26 @@
+{
+	"name": "Nigeria 2014 - Emotional Ranges",
+	"questions": [
+		{
+			"question": "Rate the emotional negativity of this tweet",
+			"scale": [
+				1,
+				2,
+				3,
+				4,
+				5
+			]
+		},
+		{
+			"question": "Rate the emotional positivity of this tweet",
+			"scale": [
+				1,
+				2,
+				3,
+				4,
+				5 
+			]
+		}
+	],
+	"type": 3
+}
