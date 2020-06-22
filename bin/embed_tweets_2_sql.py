@@ -25,7 +25,7 @@ import itertools
 import random
 import argparse
 
-from utils import read_tweet, insert_labels
+from utils import read_tweet, insert_labels, 
 
 if __name__ == '__main__':
     # Store the commandline arguments passed to the script
@@ -134,6 +134,10 @@ if __name__ == '__main__':
 
         print("Calling label insertion...")
         insert_labels(c, task_desc["labels"], task_id)        
+
+    elif taskDesc["type"] == 3:
+        print("Calling range insertion...")
+        insert_ranges(c, task_id, taskDesc["name"], taskDesc["questions"])
 
     # Otherwise, we have an invalid task type
     else:
