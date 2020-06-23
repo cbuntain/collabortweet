@@ -7,7 +7,7 @@ var selectedElement;
 $(document).ready(function () {
 	var firstSelected = false;
 	var i; 
-	var questionIndex;//which question div are we working on?
+	var questionsSelected = 0;'
 
 	loadDataElements();
 
@@ -22,36 +22,30 @@ $(document).ready(function () {
 	//on first radio select, create next button
 	$("input:radio").change(function () {
 		if ($("#rangeQuestionContainer#rangeQuestion input:radio:checked").length > 0) {
-			selectedElement = $("#rangeQuestionContainer#rangeQuestion input:radio:checked").val;//this gives the order/index of a scale value on radio selection
+			selectedElement = $("#rangeQuestionContainer#rangeQuestion input:radio:checked");//this gives the order/index of a scale value on radio selection
+
+
+			$("#rangeQuestionContainer#rangeQuestion input: radio").each(element => {
+				if (element.is(':checked')) {
+					element.prop('checked', false);
+				}
+			});
+
+			selectedElement.prop('checked', true);
 		}
 
 		if (!firstSelected) {
 			firstSelected = true;
 
-			if (currentQuestion == numQuestions) {
+			if (questionsSelected == numQuestions) {
 				$("#rangeQuestionContainer#rangeQuestion").append(
-					"<button type='button' class='btn btn-default' id='nextButton'>Next Question</button>"
-				);
-			}
-			else {
-				$("#rangeQuestionContainer#rangeQuestion").append(
-					"<button type='button' class='btn btn-default' id='lastButton'>Submit Answers</button>"
+					"<button type='button' class='btn btn-default' id='submit'>Submit Answers!</button>"
 				);
 			}
 		}
 	});
 
-	$("#nextButton").click(function () {
-		if ($("#rangeQuestion" + (selectedElement )).hasClass("collapse")) {
-			$("#rangeQuestion" + (selectedElement)).collapse("hide");
-		}
-
-		if ($("#rangeQuestion" + (selectedElement + 1)).hasClass("collapse")) {
-			$("#rangeQuestion" + (selectedElement + 1)).collapse("show");
-		}
-	});
-
-	$("#lastButton").click(function () {
+	$("#submit").click(function () {
 		//post results to server
 	});
 });

@@ -24,15 +24,17 @@ html
 				- var rangeQuestionObject = ranges[rangeQuestionId]
 				- var rangeQuestion = rangeQuestionObject["rangeQuestion"]
 
-				div(class="row text-left rangeQuestionContainer")
+				div(class="text-left rangeQuestionContainer")
 					h4 #{rangeQuestion} :
 					h5 Pick from #{rangeQuestionObject["scale"].length}
 
-					span(id="rangeQuestion" + rangeQuestionId)
+					span(class="row" id="rangeQuestion" + rangeQuestionId)
 						each scale in rangeQuestionObject["scale"] 
-							p #{scale["rangeScaleValue"]}
+							span(style="width: 10%; display: inline-block;" class="text-left") 
+								p #{scale["rangeScaleValue"]}
 								input(
 										type="radio"
+										style="display:block; text-align:center;"
 										id=rangeQuestionId + "-" + scale["rangeScaleId"]
 										name=rangeQuestionId + "-" + scale["rangeScaleId"]
 										value=scale["rangeScaleValue"]
