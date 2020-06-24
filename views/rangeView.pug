@@ -13,7 +13,7 @@ html
 				p #{question}
 
 		//- Display options
-		div(class="container")
+		div(class="container questions")
 
 			div(class="row")
 				div(class="panel panel-default")
@@ -23,10 +23,11 @@ html
 			each rangeQuestionObject, rangeQuestionId in ranges
 				- var rangeQuestionObject = ranges[rangeQuestionId]
 				- var rangeQuestion = rangeQuestionObject["rangeQuestion"]
+				- var scaleIndex = 1
 
 				div(class="text-left rangeQuestionContainer")
 					h4 #{rangeQuestion} :
-					h5 Pick from #{rangeQuestionObject["scale"].length}
+					h5 Pick One
 
 					span(class="row" id="rangeQuestion" + rangeQuestionId)
 						each scale in rangeQuestionObject["scale"] 
@@ -35,10 +36,11 @@ html
 								input(
 										type="radio"
 										style="display:block; text-align:center;"
-										id=rangeQuestionId + "-" + scale["rangeScaleId"]
-										name=rangeQuestionId + "-" + scale["rangeScaleId"]
+										id=rangeQuestionId + "-" + scaleIndex
+										name=rangeQuestionId
 										value=scale["rangeScaleValue"]
 								)
+								- scaleIndex++
 
 
 
@@ -50,7 +52,6 @@ html
 							li(id="prevCrumb")
 							li(class="active") Current
 							li(id="prevCrumb")
-
 			div(class="modal fade", id="loadingDialog", tabindex="-1" role="dialog")
 				div(class="modal-dialog", role="document")
 					div(class="modal-content")

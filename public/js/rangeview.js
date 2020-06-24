@@ -1,59 +1,56 @@
-var numQuestions;
-var maxOrders;
-var answers;
-var selectedElement;
+var numQuestions = 0;
+var maxOrders = 0;
+var answers = [];
+var currentlySelected;
+var submitAdded = false;
 
 // Call when the document is ready
 $(document).ready(function () {
-	var firstSelected = false;
 	var i; 
-	var questionsSelected = 0;'
 
 	loadDataElements();
 
-	numQuestions = $("#rangeQuestionContainer#rangeQuestion").length;
-	maxOrders = [];
+	numQuestions += $(".rangeQuestionContainer").length;
+	maxScaleVals = [];
 
-
-	for (i = 0; i < numQuestions; i++) {
-		maxOrders.push($("#rangeQuestionContainer#rangeQuestion input:radio").length);
+	for (i = 1; i < numQuestions; i++) {
+		maxScaleVals.push($(".rangeQuestionContainer #rangeQuestion" + i + " input:radio").length);
 	}
-	
-	//on first radio select, create next button
-	$("input:radio").change(function () {
-		if ($("#rangeQuestionContainer#rangeQuestion input:radio:checked").length > 0) {
-			selectedElement = $("#rangeQuestionContainer#rangeQuestion input:radio:checked");//this gives the order/index of a scale value on radio selection
 
+	//select only one radio button per question
+	//show submit on all questions selected
+	//send each taskId, question, decision
+	for (i = 1; i < numQuestions+1; i++) {
+		$(".rangeQuestionContainer #rangeQuestion" + i + " input:radio").change(function () {
+			currentlySelected = this;
 
-			$("#rangeQuestionContainer#rangeQuestion input: radio").each(element => {
-				if (element.is(':checked')) {
-					element.prop('checked', false);
+			$(':radio[name = "'+i+'"]').each((element) => {
+				if (element != currentlySelected) {
+					element.prop("checked", false);
 				}
 			});
 
-			selectedElement.prop('checked', true);
-		}
-
-		if (!firstSelected) {
-			firstSelected = true;
-
-			if (questionsSelected == numQuestions) {
-				$("#rangeQuestionContainer#rangeQuestion").append(
+			if ($(":checked").length == numQuestions && !submitAdded) {
+				$(".questions").append(
 					"<button type='button' class='btn btn-default' id='submit'>Submit Answers!</button>"
 				);
-			}
-		}
-	});
 
-	$("#submit").click(function () {
-		//post results to server
+				submitAdded = false;
+			}
+		});
+	}
+});
+
+$(".questions").on("click", "button", function () {
+	$("input[type=radio]:checked").each((element) => {
+		console.log(element);
 	});
 });
 
-var sendSelectedElement = function(elementId, selectedLabelId) {
+var sendSelectedElement = function(question, decision) {
 	result = {
-		element: elementId,
-		selected: selectedLabelId,
+		element: question,
+		selected: decision,
 	}
 
 	$.post("/item", result, function(data) {
