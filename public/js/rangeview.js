@@ -1,5 +1,4 @@
 var numQuestions = 0;
-var maxOrders = 0;
 var answers = [];
 var currentlySelected;
 var submitAdded = false;
@@ -22,28 +21,34 @@ $(document).ready(function () {
 	//send each taskId, question, decision
 	for (i = 1; i < numQuestions+1; i++) {
 		$(".rangeQuestionContainer #rangeQuestion" + i + " input:radio").change(function () {
-			currentlySelected = this;
+			currentlySelected = $(this);
 
-			$(':radio[name = "'+i+'"]').each((element) => {
+			$(':radio[name = "' + i + '"]').each((index, element) => {
 				if (element != currentlySelected) {
 					element.prop("checked", false);
 				}
 			});
 
-			if ($(":checked").length == numQuestions && !submitAdded) {
-				$(".questions").append(
-					"<button type='button' class='btn btn-default' id='submit'>Submit Answers!</button>"
-				);
+			if ($(":checked").length == numQuestions) {
+				$("input:radio:checked").each((index, element) => {
+					answers.push([$(element).prop("name"), $(element).prop("value")])
+				});
 
-				submitAdded = false;
+				console.log(answers);
+
+				if (!submitAdded) {
+					$(".btn").removeClass("collapse");
+				}
+
+				submitAdded = true;
 			}
 		});
 	}
 });
 
 $(".questions").on("click", "button", function () {
-	$("input[type=radio]:checked").each((element) => {
-		console.log(element);
+	answers.each((index, element) => {
+		console.log($(element[0]) + " " + $(element[1]));
 	});
 });
 
