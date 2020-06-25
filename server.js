@@ -774,21 +774,22 @@ app.get('/range', function(req, res) {
 
 // Receive a tweet label
 app.post('/range', function(req, res) {
-	console.log("Body: " + req.body);
+    console.log("Receive range Body: " + req.body);
 	console.log("\telement: " + req.body.element);
 	console.log("\tselected: " + req.body.selected);
 	console.log("\tUser ID: " + req.session.user.userId);
 
-	var elementId = req.body.element;
+    var elementId = req.body.element;
+    var questionId = req.body.question;
 	var userId = req.session.user.userId;
 	var decision = req.body.selected;
 
-	db.get('INSERT INTO elementLabels (elementId, userId, labelId) \
-		VALUES (:elementId, :userId, :decision)', [elementId, userId, decision])
-		.then(function() {
-			console.log("Decision logged...");
-			res.end();
-		});
+    db.get('INSERT INTO rangeDecisions (elementId, rangeQuestionId, rangeScaleId, userId) \
+	VALUES (:elementId, :rangeQuestionId, :decision, :userId)', [elementId, questionId, decision, userId])
+        .then(function (result) {
+		    console.log("Decision logged..." + result);
+		    res.end();
+        });	
 })
 
 // Send the view for doing labeling
@@ -915,7 +916,7 @@ app.get('/item', function(req, res) {
 
 // Receive a tweet label
 app.post('/item', function(req, res) {
-	console.log("Body: " + req.body);
+	console.log("Receive label Body: " + req.body);
 	console.log("\telement: " + req.body.element);
 	console.log("\tselected: " + req.body.selected);
 	console.log("\tUser ID: " + req.session.user.userId);
@@ -1043,7 +1044,7 @@ app.get('/pair', function(req, res) {
 
 // Post pair results to the database
 app.post('/pair', function(req, res) {
-	console.log("Body: " + req.body);
+	console.log("Post pair Body: " + req.body);
 	console.log("\tpair: " + req.body.pair);
 	console.log("\tselected: " + req.body.selected);
 	console.log("\tUser ID: " + req.session.user.userId);
@@ -1062,7 +1063,7 @@ app.post('/pair', function(req, res) {
 
 // Receive an updated tweet label
 app.post('/updateLabel', function(req, res) {
-    console.log("Body: " + req.body);
+    console.log("Update label Body: " + req.body);
     console.log("\tNew Label ID: " + req.body.newLabelId);
     console.log("\tElement Label ID: " + req.body.elementLabelId);
 

@@ -2,113 +2,120 @@ var numQuestions = 0;
 var answers = [];
 var currentlySelected;
 var submitAdded = false;
+var questionIndex = 0;
 
 // Call when the document is ready
 $(document).ready(function () {
 	var i; 
 
+	numQuestions = $(".rangeQuestionContainer .row").length;
+
 	loadDataElements();
 
-	numQuestions += $(".rangeQuestionContainer").length;
-	maxScaleVals = [];
+	questionIndex = numQuestions;
 
-	for (i = 1; i < numQuestions; i++) {
-		maxScaleVals.push($(".rangeQuestionContainer #rangeQuestion" + i + " input:radio").length);
-	}
+	$("input:radio").change(function () {
+		currentlySelected = $(this);
 
-	//select only one radio button per question
-	//show submit on all questions selected
-	//send each taskId, question, decision
-	for (i = 1; i < numQuestions+1; i++) {
-		$(".rangeQuestionContainer #rangeQuestion" + i + " input:radio").change(function () {
-			currentlySelected = $(this);
+		$('input:radio').each((index, element) => {
+			if ($(element).id != currentlySelected.id) {
+				$(element).prop("checked", false);
+			}
+		});
 
-			$(':radio[name = "' + i + '"]').each((index, element) => {
-				if (element != currentlySelected) {
-					element.prop("checked", false);
-				}
+		if ($(":checked").length == numQuestions) {
+			$(":checked").each((index, element) => {
+				var rangeId = $(element).prop("id").split("-")[1];
+
+				answers.push([$(element).prop("name"), rangeId, dataElement.elementId])
 			});
 
-			if ($(":checked").length == numQuestions) {
-				$("input:radio:checked").each((index, element) => {
-					answers.push([$(element).prop("name"), $(element).prop("value")])
-				});
-
-				console.log(answers);
-
-				if (!submitAdded) {
-					$(".btn").removeClass("collapse");
-				}
+			if (!submitAdded) {
+				$(".btn").removeClass("collapse");
 
 				submitAdded = true;
 			}
-		});
-	}
-});
-
-$(".questions").on("click", "button", function () {
-	answers.each((index, element) => {
-		console.log($(element[0]) + " " + $(element[1]));
+		}
 	});
 });
 
-var sendSelectedElement = function(question, decision) {
-	result = {
-		element: question,
-		selected: decision,
-	}
+var readyHTMLElements = function () {
+	questionIndex += numQuestions;
 
-	$.post("/item", result, function(data) {
-		console.log("Successfully sent selection...");
-		loadDataElements();
-	})
+	console.log("Question index: " + questionIndex);
 
+	$("input:radio").change(function () {
+		currentlySelected = $(this);
+
+		$('input:radio').each((index, element) => {
+			if ($(element).id != currentlySelected.id) {
+				$(element).prop("checked", false);
+			}
+		});
+
+		if ($(":checked").length == numQuestions) {
+			$(":checked").each((index, element) => {
+				var rangeId = $(element).prop("id").split("-")[1];
+
+				answers.push([$(element).prop("name"), rangeId, dataElement.elementId])
+			});
+
+			if (!submitAdded) {
+				$(".btn").removeClass("collapse");
+
+				submitAdded = true;
+			}
+		}
+	});
 }
 
-var handleButtonClick = function(thisButton) {
-	var labelIndex = thisButton.attr('labelindex');
-	var labelId = thisButton.attr('labelid');
-	var parentId = thisButton.attr('parentid');
-	var childIds = thisButton.data('childids');
+$(".container > .btn").click(function() {	
+	var k;
+	for (k = questionIndex - numQuestions; k < answers.length; k++) {
+		console.log("k " + k);
 
-	if (childIds.length == 0) {
+		console.log("Sending " + answers[k][0] + " " + answers[k][1] + " " + answers[k][2]);
 
-		// Reset the selectable buttons...
-		$('.ct-label').each(function() {
-			var localParentId = $(this).attr('parentid');
-
-			if ( localParentId < 1 ) {
-				$(this).addClass('selected-label');
-				$(this).removeClass('hidden-label');
-			} else {
-				$(this).removeClass('selected-label');
-				$(this).addClass('hidden-label');
-			}
-			
-		});
-
-		sendSelectedElement(dataElement.elementId, labelId);
-	} else {
-
-		// Turn off all the selectable buttons...
-		$('.selected-label').each(function() {
-			$(this).removeClass('selected-label');
-			$(this).addClass('hidden-label');
-			
-		});
-		$('.hidden-label').each(function() {
-			var localParentId = $(this).attr('parentid');
-
-			// Add selected-label class to this index...
-			if ( localParentId == labelId ) {
-				$(this).removeClass('hidden-label');
-				$(this).addClass('selected-label');
-			}
-		});
-
-		// Rebuild the buttons display
-		regenDisplayableButtons();
+		sendSelectedElement(answers[k][0], answers[k][1], answers[k][2]);
 	}
+
+	$(":checked").each((index, element) => {
+		$(element).prop("checked", false);
+	});
+
+	$(".btn").addClass("collapse");
+
+	var i;
+	for (i = 0; i < answers.length; i++) {
+		answers[i].pop();
+	}
+
+	while (answers.length) {
+		answers.pop();
+	}
+
+	currentlySelected = null;
+	submitAdded = false;
+
+	loadDataElements();
+
+	readyHTMLElements();
+
+	console.log({ answers });
+
+});
+
+var sendSelectedElement = function(questionId, decisionId, elementId) {
+	result = {
+		element: elementId,
+		question: questionId,
+		selected: decisionId,
+	}
+
+	$.post("/range", result, function(data) {
+		console.log("Successfully sent selection...");	
+	})
+
 }
 
 var loadDataElements = function() {
@@ -142,9 +149,6 @@ var loadDataElements = function() {
 			console.log("Acquired element...");
 
 			$("#element-content-panel").html(dataElement.elementText);
-
-			// Set up the buttons...
-			//regenDisplayableButtons();
 
 			$("#loadingDialog").modal('hide');
 			console.log("Loaded element...");
