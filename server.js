@@ -174,29 +174,29 @@ app.get('/taskStats', function(req, res) {
 		GROUP BY t.taskId \
 		ORDER BY t.taskId")
 		.then(function(pairTaskData) {
-            var labelTaskData = ''
+      var labelTaskData = '';
 
-            if (!req.session.user.isadmin) {
-                labelTaskData = db.all("SELECT t.taskId, t.taskName, t.question, COUNT(DISTINCT(e.elementId)) AS eCount, COUNT(el.elementLabelId) AS labelCount \
-				FROM tasks t \
-					LEFT OUTER JOIN elements e ON t.taskId = e.taskId \
-					LEFT OUTER JOIN elementLabels el ON e.elementId = el.elementId \
-                    JOIN assignedTasks at ON t.taskId = at.assignedTaskId \
-				WHERE t.taskType == 2 \
-                AND at.userId == ? \
-				GROUP BY t.taskId \
-				ORDER BY t.taskId",
-                    req.session.user.userId);
-            }
-            else {
-                labelTaskData = db.all("SELECT t.taskId, t.taskName, t.question, COUNT(DISTINCT(e.elementId)) AS eCount, COUNT(el.elementLabelId) AS labelCount \
-				FROM tasks t \
-					LEFT OUTER JOIN elements e ON t.taskId = e.taskId \
-					LEFT OUTER JOIN elementLabels el ON e.elementId = el.elementId \
-				WHERE t.taskType == 2 \
-				GROUP BY t.taskId \
-				ORDER BY t.taskId");
-            }
+      if (!req.session.user.isadmin) {
+          labelTaskData = db.all("SELECT t.taskId, t.taskName, t.question, COUNT(DISTINCT(e.elementId)) AS eCount, COUNT(el.elementLabelId) AS labelCount \
+            FROM tasks t \
+            	LEFT OUTER JOIN elements e ON t.taskId = e.taskId \
+            	LEFT OUTER JOIN elementLabels el ON e.elementId = el.elementId \
+              JOIN assignedTasks at ON t.taskId = at.assignedTaskId \
+            WHERE t.taskType == 2 \
+                    AND at.userId == ? \
+            GROUP BY t.taskId \
+            ORDER BY t.taskId",
+              req.session.user.userId);
+      }
+      else {
+          labelTaskData = db.all("SELECT t.taskId, t.taskName, t.question, COUNT(DISTINCT(e.elementId)) AS eCount, COUNT(el.elementLabelId) AS labelCount \
+            FROM tasks t \
+            	LEFT OUTER JOIN elements e ON t.taskId = e.taskId \
+            	LEFT OUTER JOIN elementLabels el ON e.elementId = el.elementId \
+            WHERE t.taskType == 2 \
+            GROUP BY t.taskId \
+            ORDER BY t.taskId");
+      }
 
 			return Promise.all([
 				pairTaskData,
@@ -204,13 +204,49 @@ app.get('/taskStats', function(req, res) {
 			]);
 		})
 		.then(function(taskData) {
-			dataMap = {
-				pairTasks: taskData[0],
-				labelTasks: taskData[1]
-			}
 
-			res.render('taskStats', dataMap)
-		});
+      var pairTaskData = taskData[0];
+      var labelTaskData = taskData[1];
+      var rangeData = '';
+
+      if (!req.session.user.isadmin) {
+          rangeData = db.all("SELECT t.taskId, t.taskName, t.question, COUNT(DISTINCT(e.elementId)) AS eCount, COUNT(rd.rangeQuestionId) AS labelCount \
+            FROM tasks t \
+              LEFT OUTER JOIN elements e ON t.taskId = e.taskId \
+              LEFT OUTER JOIN rangeQuestions rq ON t.taskId  = rq.taskId \
+              LEFT OUTER JOIN rangeDecisions rd ON rq.rangeQuestionId = rq.rangeQuestionId \
+              JOIN assignedTasks at ON t.taskId = at.assignedTaskId \
+            WHERE t.taskType == 3 \
+                    AND at.userId == ? \
+            GROUP BY t.taskId \
+            ORDER BY t.taskId",
+              req.session.user.userId);
+      }
+      else {
+          rangeData = db.all("SELECT t.taskId, t.taskName, t.question, COUNT(DISTINCT(e.elementId)) AS eCount, COUNT(rd.rangeQuestionId) AS labelCount \
+            FROM tasks t \
+              LEFT OUTER JOIN elements e ON t.taskId = e.taskId \
+              LEFT OUTER JOIN rangeDecisions rd ON e.elementId = rd.elementId \
+            WHERE t.taskType == 3 \
+            GROUP BY t.taskId \
+            ORDER BY t.taskId");
+      }
+
+      return Promise.all([
+        pairTaskData,
+        labelTaskData,
+        rangeData
+      ]);
+
+		}).then(function(taskData) {
+      dataMap = {
+        pairTasks: taskData[0],
+        labelTasks: taskData[1],
+        rangeTasks: taskData[2],
+      }
+
+      res.render('taskStats', dataMap)
+    });
 })
 
 var calculateAgreement = function(taskInfo, taskDetails, userDetails) {
@@ -388,9 +424,38 @@ app.get('/taskStats/:taskId', function(req, res) {
 
         taskDetails["userDetails"] = userLabelDetails;
 
-			} else {
+      }  else if ( taskData.taskType == 3 ) {
+
+        var rangeQuestions = db.all("SELECT rq.rangeQuestionId AS rqId, rq.rangeQuestion AS rqQ \
+            FROM rangeQuestions rq \
+            WHERE rq.taskId = ? \
+            ORDER BY rq.taskId", taskId);
+
+        taskDetails["labelOptions"] = rangeQuestions;
+
+        var labelDetails = db.all("SELECT e.elementId AS eId, e.elementText AS eText, rd.rangeDecisionId AS rDId, rd.rangeQuestionId AS rqId, u.userId AS uId, u.screenname AS screenname, rs.rangeScaleId AS rSId, rs.rangeValue AS rVText \
+            FROM elements e \
+                JOIN rangeDecisions rd ON e.elementId = rd.elementId \
+                JOIN rangeScales rs ON rs.rangeScaleId = rd.rangeScaleId \
+                JOIN users u ON u.userId = rd.userId \
+            WHERE e.taskId = ? \
+            ORDER BY e.elementId", taskId);
+
+        taskDetails["labels"] = labelDetails;
+        
+        // Get the users who have labeled this task
+        var userLabelDetails = db.all("SELECT u.userId AS uId, u.fname AS fname, u.lname AS lname, COUNT(*) AS count \
+              FROM users u \
+                  JOIN rangeDecisions rd ON u.userId=rd.userId \
+                  JOIN rangeQuestions rq ON rq.rangeQuestionId = rd.rangeQuestionId \
+              WHERE rq.taskId = ? \
+              GROUP BY u.userId", taskId);
+
+        taskDetails["userDetails"] = userLabelDetails;
+
+      } else {
 				console.log("Unknown task type in taskStats/...");
-				taskDetails.push({ empty : true });
+				taskDetails["empty"] = true;
 			}
 
 			return Promise.props(taskDetails);
@@ -687,7 +752,7 @@ app.get('/rangeView/:id', function (req, res) {
                 db.all('SELECT rq.rangeQuestionId, rq.rangeQuestion, rs.rangeScaleId, rs.rangeValue, rs.rangeOrder \
                         FROM rangeQuestions rq JOIN rangeScales rs \
                         ON rq.rangeQuestionId = rs.rangeQuestionId \
-                        WHERE taskId=? \
+                        WHERE rq.taskId=? \
                         ORDER BY rs.rangeOrder', requestedTask)
             ]);
         })

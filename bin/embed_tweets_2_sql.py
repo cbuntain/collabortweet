@@ -25,7 +25,7 @@ import itertools
 import random
 import argparse
 
-from utils import read_tweet, insert_labels, 
+from utils import read_tweet, insert_labels, insert_ranges
 
 if __name__ == '__main__':
     # Store the commandline arguments passed to the script
@@ -87,7 +87,7 @@ if __name__ == '__main__':
     c = conn.cursor()
 
     c.execute('INSERT INTO tasks (taskName, question, taskType) VALUES (:name,'
-              ':question,:type)', task_desc)
+              ':question, :type)', task_desc)
     task_id = c.lastrowid
     print("Task ID:", task_id)
 
@@ -135,9 +135,9 @@ if __name__ == '__main__':
         print("Calling label insertion...")
         insert_labels(c, task_desc["labels"], task_id)        
 
-    elif taskDesc["type"] == 3:
+    elif task_desc["type"] == 3:
         print("Calling range insertion...")
-        insert_ranges(c, task_id, taskDesc["name"], taskDesc["questions"])
+        insert_ranges(c, task_id, task_desc["name"], task_desc["questions"])
 
     # Otherwise, we have an invalid task type
     else:

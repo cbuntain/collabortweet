@@ -61,8 +61,7 @@ CREATE TABLE IF NOT EXISTS comparisons (
 CREATE TABLE IF NOT EXISTS rangeQuestions(
 	rangeQuestionId INTEGER PRIMARY KEY,
 	rangeQuestion TEXT NOT NULL,
-	taskId INTEGER NOT NULL,
-	decision INTEGER
+	taskId INTEGER NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS rangeScales(
@@ -80,13 +79,4 @@ CREATE TABLE IF NOT EXISTS rangeDecisions(
 	userId INTEGER NOT NULL,
     time TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
-
-CREATE VIEW pairChoices AS SELECT
-	els.elementId AS elementId, els.taskId as taskId, COUNT(cps.compareId) AS counter
-	FROM 
-	elements els 
-	LEFT OUTER JOIN pairs prs ON 
-		els.elementId = prs.leftElement OR els.elementId = prs.rightElement
-	LEFT OUTER JOIN comparisons cps ON cps.pairId = prs.pairId
-	GROUP BY els.elementId;
 
