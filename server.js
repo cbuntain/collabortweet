@@ -516,11 +516,14 @@ app.get('/csv/:taskId', function (req, res) {
               u.userId AS labelerId, \
               u.screenname AS labelerScreenname, \
               l.labelId AS labelId, \
-              l.labelText AS labelText \
+              l.labelText AS labelText, \
+              l.parentLabel AS parentLabel, \
+              pl.labelText AS parentLabelText \
             FROM elements e \
                 JOIN elementLabels el ON e.elementId = el.elementId \
                 JOIN labels l ON el.labelId = l.labelId \
                 JOIN users u ON u.userId = el.userId \
+                LEFT OUTER JOIN labels pl ON l.parentLabel = pl.labelId \
             WHERE e.taskId = ? \
             ORDER BY e.elementId", taskId);
 
@@ -555,7 +558,7 @@ app.get('/csv/:taskId', function (req, res) {
                 })
             }
             else {
-                taskCSVToSend = 'elementId,externalId,labelerId,lablerScreenname,labelId,labelText\n';
+                taskCSVToSend = 'elementId,externalId,labelerId,lablerScreenname,labelId,labelText,parentLabel,parentLabelText\n';
 
                 var concatStr = '';
 
@@ -566,7 +569,9 @@ app.get('/csv/:taskId', function (req, res) {
                         index['labelerId'] + ',' +
                         index['labelerScreenname'] + ',' +
                         index['labelId'] + ',' +
-                        index['labelText'];
+                        index['labelText'] + ',' +
+                        index['parentLabel'] + ',' +
+                        index['parentLabelText'];
 
                     taskCSVToSend += concatStr + '\n'; 
                 })
@@ -613,11 +618,14 @@ app.get('/json/:taskId', function(req, res) {
               u.userId AS labelerId, \
               u.screenname AS labelerScreenname, \
               l.labelId AS labelId, \
-              l.labelText AS labelText \
+              l.labelText AS labelText, \
+              l.parentLabel AS parentLabel, \
+              pl.labelText AS parentLabelText \
             FROM elements e \
                 JOIN elementLabels el ON e.elementId = el.elementId \
                 JOIN labels l ON el.labelId = l.labelId \
                 JOIN users u ON u.userId = el.userId \
+                LEFT OUTER JOIN labels pl ON l.parentLabel = pl.labelId \
             WHERE e.taskId = ? \
             ORDER BY e.elementId", taskId);
 

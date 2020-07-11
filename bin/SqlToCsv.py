@@ -113,7 +113,10 @@ for r in taskRows:
     labelDf = pd.DataFrame(dataSamples)
     
     # Add "text" to the list below to add text to the resulting CSV
-    labelDf[["external_id", "user_id", "username", "label"]].sort_values(by="external_id").to_csv("task_id_%03d.csv" % taskId, index=False)
+    if labelDf.shape[0] > 0:
+        labelDf[["external_id", "user_id", "username", "label"]].sort_values(by="external_id").to_csv("task_id_%03d.csv" % taskId, index=False)
+    else:
+        print("Nothing to export")
     
 
 
