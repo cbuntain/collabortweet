@@ -439,7 +439,7 @@ app.get('/taskStats/:taskId', function(req, res) {
                 JOIN rangeScales rs ON rs.rangeScaleId = rd.rangeScaleId \
                 JOIN users u ON u.userId = rd.userId \
             WHERE e.taskId = ? \
-            ORDER BY e.elementId", taskId);
+            ORDER BY e.elementId", taskId);//group by label details by group and element ids
 
         taskDetails["labels"] = labelDetails;
         
@@ -483,34 +483,52 @@ app.get('/taskStats/:taskId', function(req, res) {
 })
 
 // Send a list of the tasks for inspection
-app.get('/export', function(req, res) {
-  db.all("SELECT t.taskId, t.taskName, t.question, COUNT(c.compareId) AS counter \
-    FROM tasks t \
-      LEFT OUTER JOIN pairs p ON t.taskId = p.taskId \
-      LEFT OUTER JOIN comparisons c ON p.pairId = c.pairId \
-    WHERE t.taskType == 1 \
-    GROUP BY t.taskId \
-    ORDER BY t.taskId")
-    .then(function(pairTaskData) {
+app.get('/export', function (req, res) {
+    db.all("SELECT t.taskId, t.taskName, t.question, COUNT(c.compareId) AS counter \
+		FROM tasks t \
+			LEFT OUTER JOIN pairs p ON t.taskId = p.taskId \
+			LEFT OUTER JOIN comparisons c ON p.pairId = c.pairId \
+		WHERE t.taskType == 1 \
+		GROUP BY t.taskId \
+		ORDER BY t.taskId")
+        .then(function (pairTaskData) {
+            var labelTaskData = db.all("SELECT t.taskId, t.taskName, t.question, COUNT(DISTINCT(e.elementId)) AS eCount, COUNT(el.elementLabelId) AS labelCount \
+            FROM tasks t \
+            	LEFT OUTER JOIN elements e ON t.taskId = e.taskId \
+            	LEFT OUTER JOIN elementLabels el ON e.elementId = el.elementId \
+            WHERE t.taskType == 2 \
+            GROUP BY t.taskId \
+            ORDER BY t.taskId");
 
-      var labelTaskData = db.all("SELECT t.taskId, t.taskName, t.question, COUNT(DISTINCT(e.elementId)) AS eCount, COUNT(el.elementLabelId) AS labelCount \
-        FROM tasks t \
-          LEFT OUTER JOIN elements e ON t.taskId = e.taskId \
-          LEFT OUTER JOIN elementLabels el ON e.elementId = el.elementId \
-        WHERE t.taskType == 2 \
-        GROUP BY t.taskId \
-        ORDER BY t.taskId");
+            return Promise.all([
+                pairTaskData,
+                labelTaskData
+            ]);
+        })
+        .then(function (taskData) {
 
-      return Promise.all([
-        pairTaskData,
-        labelTaskData
-      ]);
-    })
-    .then(function(taskData) {
-      dataMap = {
-        pairTasks: taskData[0],
-        labelTasks: taskData[1]
-      }
+            var pairTaskData = taskData[0];
+            var labelTaskData = taskData[1];
+            var rangeData = db.all("SELECT t.taskId, t.taskName, t.question, COUNT(DISTINCT(e.elementId)) AS eCount, COUNT(rd.rangeQuestionId) AS labelCount \
+            FROM tasks t \
+              LEFT OUTER JOIN elements e ON t.taskId = e.taskId \
+              LEFT OUTER JOIN rangeDecisions rd ON e.elementId = rd.elementId \
+            WHERE t.taskType == 3 \
+            GROUP BY t.taskId \
+            ORDER BY t.taskId");
+
+            return Promise.all([
+                pairTaskData,
+                labelTaskData,
+                rangeData
+            ]);
+
+        }).then(function (taskData) {
+            dataMap = {
+                pairTasks: taskData[0],
+                labelTasks: taskData[1],
+                rangeTasks: taskData[2],
+            }
 
       res.render('export', dataMap)
     });
@@ -520,6 +538,7 @@ app.get('/export', function(req, res) {
 app.get('/csv/:taskId', function (req, res) {
     var taskId = req.params.taskId;
     var comp = false;
+    var range = false;
 
     db.get("SELECT taskName, question, taskType FROM tasks WHERE taskId = ?", taskId)
         .then(function (taskData) {
@@ -547,7 +566,7 @@ app.get('/csv/:taskId', function (req, res) {
 
                 var labelDetails = db.all("SELECT \
               e.elementId AS elementId, \
-              e.externalId externalId, \
+              e.externalId AS externalId, \
               e.elementText AS elementText, \
               el.elementLabelId AS chosenLabel, \
               u.userId AS labelerId, \
@@ -562,6 +581,29 @@ app.get('/csv/:taskId', function (req, res) {
             ORDER BY e.elementId", taskId);
 
                 taskDetails["labels"] = labelDetails;
+
+            }else if (taskData.taskType == 3) {
+
+                var labelDetails = db.all("SELECT \
+              e.elementId AS elementId, \
+              e.externalId AS externalId, \
+              e.elementText AS elementText, \
+              u.userId AS labelerId, \
+              u.screenname AS labelerScreenname, \
+              rq.rangeQuestion AS rangeQuestion, \
+              rs.rangeValue AS rangeValue, \
+              rd.rangeScaleId AS rangeScaleId \
+            FROM elements e \
+                JOIN rangeDecisions rd ON e.elementId = rd.elementId \
+                JOIN rangeQuestions rq ON rd.rangeQuestionId = rq.rangeQuestionId \
+                JOIN rangeScales rs ON rq.rangeQuestionId = rs.rangeQuestionId \
+                JOIN users u ON u.userId = labelerId \
+            WHERE e.taskId = ? \
+            ORDER BY e.elementId", taskId);
+
+                taskDetails["ranges"] = labelDetails;
+
+                range = true;
 
             } else {
                 console.log("Unknown task type in json/...");
@@ -591,7 +633,23 @@ app.get('/csv/:taskId', function (req, res) {
                     taskCSVToSend += concatStr + '\n'; 
                 })
             }
-            else {
+            else if (range) {
+                var taskDetails = taskInfoMap["ranges"];
+                taskCSVToSend = 'elementId,externalId,rangeQuestion,rangeValue,labelerScreenname\n';
+
+                var concatStr = '';
+
+                taskDetails.forEach(function (index) {
+                    concatStr = index['elementId'] + ',' +
+                        index['externalId'] + ',' +
+                        index['rangeQuestion'] + ',' +
+                        index['rangeValue'] + ',' +
+                        index['labelerScreenname'];
+
+                    taskCSVToSend += concatStr + '\n';
+                })
+            }
+            else{
                 taskCSVToSend = 'elementId,externalId,chosenLabel,labelerId,lablerScreenname,labelId,labelText\n';
 
                 var concatStr = '';
@@ -851,8 +909,8 @@ app.post('/range', function(req, res) {
 
     db.get('INSERT INTO rangeDecisions (elementId, rangeQuestionId, rangeScaleId, userId) \
 	VALUES (:elementId, :rangeQuestionId, :decision, :userId)', [elementId, questionId, decision, userId])
-        .then(function (result) {
-		    console.log("Decision logged..." + result);
+        .then(function () {
+            console.log("Decision logged...");
 		    res.end();
         });	
 })
