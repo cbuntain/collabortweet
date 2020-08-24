@@ -44,8 +44,20 @@ def readTweet(tweetObj):
 	return (tweetText, tweetId)
 
 with codecs.open(tweetPath, "r", "utf8") as inFile:
+	line_count = 0
 	for line in inFile:
-		tweet = json.loads(line)
+
+		# Error catching for when the input file has an issue
+		tweet = None
+		try:
+			tweet = json.loads(line)
+		except Exception as e:
+			print("Error on line: %d" % line_count)
+			print("Line:\n%s\n" % line)
+			raise e
+
+		# Track the line we're reading for more informative errors
+		line_count += 1
 
 		# CB 20200326: Adding this check to remove instances
 		#  where we have a retweeted_status and quoted_status

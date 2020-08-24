@@ -2,7 +2,8 @@
 # coding: utf-8
 
 # In[ ]:
-
+import sys
+import argparse
 import sqlite3
 import sklearn.metrics
 import statsmodels.stats.inter_rater
@@ -13,7 +14,13 @@ import pandas as pd
 
 # In[ ]:
 
-conn = sqlite3.connect('database.sqlite3')
+parser = argparse.ArgumentParser()
+parser.add_argument('--database', default='database.sqlite3')
+args = parser.parse_args()
+
+database_path = args.database
+
+conn = sqlite3.connect(database_path)
 c = conn.cursor()
 
 
@@ -91,11 +98,12 @@ for r in taskRows:
     dataSamples = []
     elementAndLabelList = c.execute("SELECT el.elementId, el.labelId, el.userId, " + \
          "e.externalId, l.labelText, l.taskId, e.elementText, " + \
-         "u.screenname " + \
+         "u.screenname, l.parentLabel, pl.labelText " + \
          "FROM elementLabels el JOIN elements e " + \
          "ON e.elementId = el.elementId " + \
          "JOIN labels l ON el.labelId = l.labelId " + \
          "JOIN users u ON el.userId = u.userId " + \
+         "LEFT OUTER JOIN labels pl ON l.parentLabel = pl.labelId " + \
          "WHERE e.taskId = ?", (taskId, )).fetchall()
     # For each element in the row, convert it to a map and add it to our 
     #  list of samples. NOTE: If you want to add text here
@@ -103,6 +111,7 @@ for r in taskRows:
         dataSample = {
             "external_id": row[3],
             "label": row[4],
+            "parentLabel": row[9],
             "user_id": row[2],
             "username": row[7],
             "text": row[6],
@@ -113,7 +122,10 @@ for r in taskRows:
     labelDf = pd.DataFrame(dataSamples)
     
     # Add "text" to the list below to add text to the resulting CSV
-    labelDf[["external_id", "user_id", "username", "label"]].sort_values(by="external_id").to_csv("task_id_%03d.csv" % taskId, index=False)
+    if labelDf.shape[0] > 0:
+        labelDf[["external_id", "user_id", "username", "label", "parentLabel"]].sort_values(by="external_id").to_csv("task_id_%03d.csv" % taskId, index=False)
+    else:
+        print("Nothing to export")
     
 
 
