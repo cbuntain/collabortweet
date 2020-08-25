@@ -24,6 +24,8 @@ html
 									a(href="/pairView/" + v.taskId) Task #{v.taskId}: #{v.taskName}
 								else if v.taskType == 2
 									a(href="/labelerView/" + v.taskId) Task #{v.taskId}: #{v.taskName}
+								else if v.taskType == 3
+									a(href="/rangeView/" + v.taskId) Task #{v.taskId}: #{v.taskName}
 								else
 									p Unsupported Task #{v.taskId}: #{v.taskName}
 

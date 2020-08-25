@@ -194,29 +194,29 @@ app.get('/taskStats', function(req, res) {
 		GROUP BY t.taskId \
 		ORDER BY t.taskId")
 		.then(function(pairTaskData) {
-            var labelTaskData = ''
+      var labelTaskData = '';
 
-            if (!req.session.user.isadmin) {
-                labelTaskData = db.all("SELECT t.taskId, t.taskName, t.question, COUNT(DISTINCT(e.elementId)) AS eCount, COUNT(el.elementLabelId) AS labelCount \
-				FROM tasks t \
-					LEFT OUTER JOIN elements e ON t.taskId = e.taskId \
-					LEFT OUTER JOIN elementLabels el ON e.elementId = el.elementId \
-                    JOIN assignedTasks at ON t.taskId = at.assignedTaskId \
-				WHERE t.taskType == 2 \
-                AND at.userId == ? \
-				GROUP BY t.taskId \
-				ORDER BY t.taskId",
-                    req.session.user.userId);
-            }
-            else {
-                labelTaskData = db.all("SELECT t.taskId, t.taskName, t.question, COUNT(DISTINCT(e.elementId)) AS eCount, COUNT(el.elementLabelId) AS labelCount \
-				FROM tasks t \
-					LEFT OUTER JOIN elements e ON t.taskId = e.taskId \
-					LEFT OUTER JOIN elementLabels el ON e.elementId = el.elementId \
-				WHERE t.taskType == 2 \
-				GROUP BY t.taskId \
-				ORDER BY t.taskId");
-            }
+      if (!req.session.user.isadmin) {
+          labelTaskData = db.all("SELECT t.taskId, t.taskName, t.question, COUNT(DISTINCT(e.elementId)) AS eCount, COUNT(el.elementLabelId) AS labelCount \
+            FROM tasks t \
+            	LEFT OUTER JOIN elements e ON t.taskId = e.taskId \
+            	LEFT OUTER JOIN elementLabels el ON e.elementId = el.elementId \
+              JOIN assignedTasks at ON t.taskId = at.assignedTaskId \
+            WHERE t.taskType == 2 \
+                    AND at.userId == ? \
+            GROUP BY t.taskId \
+            ORDER BY t.taskId",
+              req.session.user.userId);
+      }
+      else {
+          labelTaskData = db.all("SELECT t.taskId, t.taskName, t.question, COUNT(DISTINCT(e.elementId)) AS eCount, COUNT(el.elementLabelId) AS labelCount \
+            FROM tasks t \
+            	LEFT OUTER JOIN elements e ON t.taskId = e.taskId \
+            	LEFT OUTER JOIN elementLabels el ON e.elementId = el.elementId \
+            WHERE t.taskType == 2 \
+            GROUP BY t.taskId \
+            ORDER BY t.taskId");
+      }
 
 			return Promise.all([
 				pairTaskData,
@@ -224,13 +224,49 @@ app.get('/taskStats', function(req, res) {
 			]);
 		})
 		.then(function(taskData) {
-			dataMap = {
-				pairTasks: taskData[0],
-				labelTasks: taskData[1]
-			}
 
-			res.render('taskStats', dataMap)
-		});
+      var pairTaskData = taskData[0];
+      var labelTaskData = taskData[1];
+      var rangeData = '';
+
+      if (!req.session.user.isadmin) {
+          rangeData = db.all("SELECT t.taskId, t.taskName, t.question, COUNT(DISTINCT(e.elementId)) AS eCount, COUNT(rd.rangeQuestionId) AS labelCount \
+            FROM tasks t \
+              LEFT OUTER JOIN elements e ON t.taskId = e.taskId \
+              LEFT OUTER JOIN rangeQuestions rq ON t.taskId  = rq.taskId \
+              LEFT OUTER JOIN rangeDecisions rd ON rq.rangeQuestionId = rq.rangeQuestionId \
+              JOIN assignedTasks at ON t.taskId = at.assignedTaskId \
+            WHERE t.taskType == 3 \
+                    AND at.userId == ? \
+            GROUP BY t.taskId \
+            ORDER BY t.taskId",
+              req.session.user.userId);
+      }
+      else {
+          rangeData = db.all("SELECT t.taskId, t.taskName, t.question, COUNT(DISTINCT(e.elementId)) AS eCount, COUNT(rd.rangeQuestionId) AS labelCount \
+            FROM tasks t \
+              LEFT OUTER JOIN elements e ON t.taskId = e.taskId \
+              LEFT OUTER JOIN rangeDecisions rd ON e.elementId = rd.elementId \
+            WHERE t.taskType == 3 \
+            GROUP BY t.taskId \
+            ORDER BY t.taskId");
+      }
+
+      return Promise.all([
+        pairTaskData,
+        labelTaskData,
+        rangeData
+      ]);
+
+		}).then(function(taskData) {
+      dataMap = {
+        pairTasks: taskData[0],
+        labelTasks: taskData[1],
+        rangeTasks: taskData[2],
+      }
+
+      res.render('taskStats', dataMap)
+    });
 })
 
 var calculateAgreement = function(taskInfo, taskDetails, userDetails) {
@@ -417,9 +453,38 @@ app.get('/taskStats/:taskId', function(req, res) {
 
         taskDetails["userDetails"] = userLabelDetails;
 
-			} else {
+      }  else if ( taskData.taskType == 3 ) {
+
+        var rangeQuestions = db.all("SELECT rq.rangeQuestionId AS rqId, rq.rangeQuestion AS rqQ \
+            FROM rangeQuestions rq \
+            WHERE rq.taskId = ? \
+            ORDER BY rq.taskId", taskId);
+
+        taskDetails["labelOptions"] = rangeQuestions;
+
+        var labelDetails = db.all("SELECT e.elementId AS eId, e.elementText AS eText, rd.rangeDecisionId AS rDId, rd.rangeQuestionId AS rqId, u.userId AS uId, u.screenname AS screenname, rs.rangeScaleId AS rSId, rs.rangeValue AS rVText \
+            FROM elements e \
+                JOIN rangeDecisions rd ON e.elementId = rd.elementId \
+                JOIN rangeScales rs ON rs.rangeScaleId = rd.rangeScaleId \
+                JOIN users u ON u.userId = rd.userId \
+            WHERE e.taskId = ? \
+            ORDER BY e.elementId", taskId);//group by label details by group and element ids
+
+        taskDetails["labels"] = labelDetails;
+        
+        // Get the users who have labeled this task
+        var userLabelDetails = db.all("SELECT u.userId AS uId, u.fname AS fname, u.lname AS lname, COUNT(*) AS count \
+              FROM users u \
+                  JOIN rangeDecisions rd ON u.userId=rd.userId \
+                  JOIN rangeQuestions rq ON rq.rangeQuestionId = rd.rangeQuestionId \
+              WHERE rq.taskId = ? \
+              GROUP BY u.userId", taskId);
+
+        taskDetails["userDetails"] = userLabelDetails;
+
+      } else {
 				console.log("Unknown task type in taskStats/...");
-				taskDetails.push({ empty : true });
+				taskDetails["empty"] = true;
 			}
 
 			return Promise.props(taskDetails);
@@ -447,34 +512,52 @@ app.get('/taskStats/:taskId', function(req, res) {
 })
 
 // Send a list of the tasks for inspection
-app.get('/export', function(req, res) {
-  db.all("SELECT t.taskId, t.taskName, t.question, COUNT(c.compareId) AS counter \
-    FROM tasks t \
-      LEFT OUTER JOIN pairs p ON t.taskId = p.taskId \
-      LEFT OUTER JOIN comparisons c ON p.pairId = c.pairId \
-    WHERE t.taskType == 1 \
-    GROUP BY t.taskId \
-    ORDER BY t.taskId")
-    .then(function(pairTaskData) {
+app.get('/export', function (req, res) {
+    db.all("SELECT t.taskId, t.taskName, t.question, COUNT(c.compareId) AS counter \
+		FROM tasks t \
+			LEFT OUTER JOIN pairs p ON t.taskId = p.taskId \
+			LEFT OUTER JOIN comparisons c ON p.pairId = c.pairId \
+		WHERE t.taskType == 1 \
+		GROUP BY t.taskId \
+		ORDER BY t.taskId")
+        .then(function (pairTaskData) {
+            var labelTaskData = db.all("SELECT t.taskId, t.taskName, t.question, COUNT(DISTINCT(e.elementId)) AS eCount, COUNT(el.elementLabelId) AS labelCount \
+            FROM tasks t \
+            	LEFT OUTER JOIN elements e ON t.taskId = e.taskId \
+            	LEFT OUTER JOIN elementLabels el ON e.elementId = el.elementId \
+            WHERE t.taskType == 2 \
+            GROUP BY t.taskId \
+            ORDER BY t.taskId");
 
-      var labelTaskData = db.all("SELECT t.taskId, t.taskName, t.question, COUNT(DISTINCT(e.elementId)) AS eCount, COUNT(el.elementLabelId) AS labelCount \
-        FROM tasks t \
-          LEFT OUTER JOIN elements e ON t.taskId = e.taskId \
-          LEFT OUTER JOIN elementLabels el ON e.elementId = el.elementId \
-        WHERE t.taskType == 2 \
-        GROUP BY t.taskId \
-        ORDER BY t.taskId");
+            return Promise.all([
+                pairTaskData,
+                labelTaskData
+            ]);
+        })
+        .then(function (taskData) {
 
-      return Promise.all([
-        pairTaskData,
-        labelTaskData
-      ]);
-    })
-    .then(function(taskData) {
-      dataMap = {
-        pairTasks: taskData[0],
-        labelTasks: taskData[1]
-      }
+            var pairTaskData = taskData[0];
+            var labelTaskData = taskData[1];
+            var rangeData = db.all("SELECT t.taskId, t.taskName, t.question, COUNT(DISTINCT(e.elementId)) AS eCount, COUNT(rd.rangeQuestionId) AS labelCount \
+            FROM tasks t \
+              LEFT OUTER JOIN elements e ON t.taskId = e.taskId \
+              LEFT OUTER JOIN rangeDecisions rd ON e.elementId = rd.elementId \
+            WHERE t.taskType == 3 \
+            GROUP BY t.taskId \
+            ORDER BY t.taskId");
+
+            return Promise.all([
+                pairTaskData,
+                labelTaskData,
+                rangeData
+            ]);
+
+        }).then(function (taskData) {
+            dataMap = {
+                pairTasks: taskData[0],
+                labelTasks: taskData[1],
+                rangeTasks: taskData[2],
+            }
 
       res.render('export', dataMap)
     });
@@ -484,6 +567,7 @@ app.get('/export', function(req, res) {
 app.get('/csv/:taskId', function (req, res) {
     var taskId = req.params.taskId;
     var comp = false;
+    var range = false;
 
     db.get("SELECT taskName, question, taskType FROM tasks WHERE taskId = ?", taskId)
         .then(function (taskData) {
@@ -511,7 +595,7 @@ app.get('/csv/:taskId', function (req, res) {
 
                 var labelDetails = db.all("SELECT \
               e.elementId AS elementId, \
-              e.externalId externalId, \
+              e.externalId AS externalId, \
               e.elementText AS elementText, \
               u.userId AS labelerId, \
               u.screenname AS labelerScreenname, \
@@ -528,6 +612,29 @@ app.get('/csv/:taskId', function (req, res) {
             ORDER BY e.elementId", taskId);
 
                 taskDetails["labels"] = labelDetails;
+
+            }else if (taskData.taskType == 3) {
+
+                var labelDetails = db.all("SELECT \
+              e.elementId AS elementId, \
+              e.externalId AS externalId, \
+              e.elementText AS elementText, \
+              u.userId AS labelerId, \
+              u.screenname AS labelerScreenname, \
+              rq.rangeQuestion AS rangeQuestion, \
+              rs.rangeValue AS rangeValue, \
+              rd.rangeScaleId AS rangeScaleId \
+            FROM elements e \
+                JOIN rangeDecisions rd ON e.elementId = rd.elementId \
+                JOIN rangeQuestions rq ON rd.rangeQuestionId = rq.rangeQuestionId \
+                JOIN rangeScales rs ON rq.rangeQuestionId = rs.rangeQuestionId \
+                JOIN users u ON u.userId = labelerId \
+            WHERE e.taskId = ? \
+            ORDER BY e.elementId", taskId);
+
+                taskDetails["ranges"] = labelDetails;
+
+                range = true;
 
             } else {
                 console.log("Unknown task type in json/...");
@@ -557,8 +664,28 @@ app.get('/csv/:taskId', function (req, res) {
                     taskCSVToSend += concatStr + '\n'; 
                 })
             }
-            else {
+            else if (range) {
+                var taskDetails = taskInfoMap["ranges"];
+                
                 taskCSVToSend = 'elementId,externalId,labelerId,lablerScreenname,labelId,labelText,parentLabel,parentLabelText\n';
+
+                var concatStr = '';
+
+                taskDetails.forEach(function (index) {
+                    concatStr = index['elementId'] + ',' +
+                        index['externalId'] + ',' +
+                        index['labelerId'] + ',' +
+                        index['lablerScreename'] + ',' +
+                        index['labelId'] + ',' +
+                        index['labelText'] + ',' +
+                        index['parentLabel'] + ',' +
+                        index['parentLabelText'];
+
+                    taskCSVToSend += concatStr + '\n';
+                })
+            }
+            else{
+                taskCSVToSend = 'elementId,externalId,chosenLabel,labelerId,lablerScreenname,labelId,labelText\n';
 
                 var concatStr = '';
 
@@ -611,7 +738,7 @@ app.get('/json/:taskId', function(req, res) {
 
       } else if ( taskData.taskType == 2 ) {
 
-        var labelDetails = db.all("SELECT \
+          var labelDetails = db.all("SELECT \
               e.elementId AS elementId, \
               e.externalId externalId, \
               e.elementText AS elementText, \
@@ -631,7 +758,21 @@ app.get('/json/:taskId', function(req, res) {
 
         taskDetails["labels"] = labelDetails;
 
-      } else {
+      }
+      else if (taskData.taskType == 3){
+          var rangeDetails = db.all("SELECT \
+                rq.rangeQuestionId, \
+                rq.rangeQuestion, \
+                rs.rangeValue \
+                FROM rangeQuestions rq, \
+                rangeScales rs \
+                WHERE rq.taskId = ? \
+                ORDER BY rs.rangeOrder; "
+              , taskId)
+
+          taskDetails["labels"] = rangeDetails;
+    }
+    else {
         console.log("Unknown task type in json/...");
         taskDetails.push({ empty : true });
       }
@@ -689,6 +830,133 @@ app.get('/taskView', function (req, res) {
     }
 })
 
+
+// Send the view for doing labeling
+app.get('/rangeView/:id', function (req, res) {
+
+	// Store the task ID in the session
+	var requestedTask = req.params.id
+	req.session.taskId = requestedTask
+
+	var currentUser = req.session.user
+	console.log("Current User Session: " + currentUser.screenname)
+
+    db.get('SELECT taskName, question FROM tasks WHERE taskId = ?', requestedTask)
+        .then(function (taskData) {
+            taskMap = {
+                taskId: requestedTask,
+                taskName: taskData.taskName,
+            }
+
+            return Promise.all([
+                taskMap,
+                db.all('SELECT rq.rangeQuestionId, rq.rangeQuestion, rs.rangeScaleId, rs.rangeValue, rs.rangeOrder \
+                        FROM rangeQuestions rq JOIN rangeScales rs \
+                        ON rq.rangeQuestionId = rs.rangeQuestionId \
+                        WHERE rq.taskId=? \
+                        ORDER BY rs.rangeOrder', requestedTask)
+            ]);
+        })
+		.then(function(rangeData) {
+
+      var taskData = rangeData[0];
+      var rangeQuestionList = rangeData[1];
+
+      console.log("Result: ");
+      console.log(taskData);
+      console.log({rangeQuestionList});
+
+      var rangeQuestionMap = {};
+
+      rangeQuestionList.forEach(element => {
+        var rqId = element["rangeQuestionId"];
+
+        if (!(rqId in rangeQuestionMap)) {
+          rangeQuestionMap[rqId] = {
+            "rangeQuestion": element["rangeQuestion"],
+            "scale": new Array(),
+          }
+        }
+
+        var thisRangeQuestion = rangeQuestionMap[rqId];
+        thisRangeQuestion["scale"].push({
+          "rangeScaleId": element["rangeScaleId"],
+          "rangeScaleValue": element["rangeValue"],
+        });
+      });
+
+			dataMap = {
+				taskId: taskData.taskId,
+				taskName: taskData.taskName, 
+				ranges: rangeQuestionMap,
+				authorized: req.session.user ? true : false,
+				user: req.session.user,
+			}
+
+			res.render('rangeView', dataMap)
+		});
+})
+
+// Send a tweet for labeling
+app.get('/range', function(req, res) {
+
+	// Pull the task from the session
+	var requestedTask = req.session.taskId
+
+	console.log("New item requested!");
+
+	var localUser = req.session.user;
+	console.log("Local User:");
+	console.log(localUser);
+
+	// Get a set of candidate elements
+	db.all('SELECT elementId, elementText \
+		FROM elements e \
+		WHERE taskId = ? AND \
+		(SELECT COUNT(*) \
+			FROM elementLabels el \
+			WHERE el.elementId = e.elementId \
+			AND el.userId = ?) == 0 \
+	 	LIMIT 10', [requestedTask, localUser.userId])
+		.then(function(elements) {
+
+			if ( elements.length > 0 ) {
+				var targetElement = getRandomElement(elements);
+				console.log("Target Element: " + targetElement);
+				console.log("\t" + targetElement["elementId"]);
+				console.log("\t" + targetElement["elementText"]);
+
+				res.setHeader('Content-Type', 'application/json');
+				res.send(JSON.stringify(targetElement));
+			} else {
+				console.log("Done!");
+
+				res.setHeader('Content-Type', 'application/json');
+				res.send(JSON.stringify({ empty: true }));
+			}
+		});
+
+})
+
+// Receive a tweet label
+app.post('/range', function(req, res) {
+    console.log("Receive range Body: " + req.body);
+	console.log("\telement: " + req.body.element);
+	console.log("\tselected: " + req.body.selected);
+	console.log("\tUser ID: " + req.session.user.userId);
+
+    var elementId = req.body.element;
+    var questionId = req.body.question;
+	var userId = req.session.user.userId;
+	var decision = req.body.selected;
+
+    db.get('INSERT INTO rangeDecisions (elementId, rangeQuestionId, rangeScaleId, userId) \
+	VALUES (:elementId, :rangeQuestionId, :decision, :userId)', [elementId, questionId, decision, userId])
+        .then(function () {
+            console.log("Decision logged...");
+		    res.end();
+        });	
+})
 
 // Send the view for doing labeling
 app.get('/labelerView/:id', function (req, res) {
@@ -822,7 +1090,7 @@ app.get('/item', function(req, res) {
 
 // Receive a tweet label
 app.post('/item', function(req, res) {
-	console.log("Body: " + req.body);
+	console.log("Receive label Body: " + req.body);
 	console.log("\telement: " + req.body.element);
 	console.log("\tselected: " + req.body.selected);
 	console.log("\tUser ID: " + req.session.user.userId);
@@ -950,7 +1218,7 @@ app.get('/pair', function(req, res) {
 
 // Post pair results to the database
 app.post('/pair', function(req, res) {
-	console.log("Body: " + req.body);
+	console.log("Post pair Body: " + req.body);
 	console.log("\tpair: " + req.body.pair);
 	console.log("\tselected: " + req.body.selected);
 	console.log("\tUser ID: " + req.session.user.userId);
@@ -969,7 +1237,7 @@ app.post('/pair', function(req, res) {
 
 // Receive an updated tweet label
 app.post('/updateLabel', function(req, res) {
-    console.log("Body: " + req.body);
+    console.log("Update label Body: " + req.body);
     console.log("\tNew Label ID: " + req.body.newLabelId);
     console.log("\tElement Label ID: " + req.body.elementLabelId);
 

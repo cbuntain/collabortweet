@@ -21,7 +21,12 @@ html
 
 							div(class="panel-heading") 
 								h4 
-									a(href="/json/" + v.taskId) Task #{v.taskId}: #{v.taskName}
+									Task #{v.taskId}: #{v.taskName}
+										ul.list-unstyled
+											li
+												a.text-white(href="/json/" + v.taskId) JSON
+											li
+												a.text-white(href="/csv/" + v.taskId) CSV
 
 							div(class="panel-body")
 								p Comparisons Answered: #{v.counter}
@@ -45,6 +50,26 @@ html
 							div(class="panel-body")
 								p Elements to Label: #{v.eCount}
 								p Labels Provided: #{v.labelCount}
+								p #{v.question}
+
+			if dataMap.rangeTasks.length > 0
+				h2 Available Range-Based Tasks:
+				each v in dataMap.rangeTasks
+					div(class="row")
+						div(class="panel panel-default")
+
+							div(class="panel-heading") 
+								h4 
+									Task #{v.taskId}: #{v.taskName}
+										ul.list-unstyled
+											li
+												a.text-white(href="/json/" + v.taskId) JSON
+											li
+												a.text-white(href="/csv/" + v.taskId) CSV
+
+							div(class="panel-body")
+								p Ranges to Label: #{v.eCount}
+								p Range Decisions Provided: #{v.labelCount}
 								p #{v.question}
 
 
