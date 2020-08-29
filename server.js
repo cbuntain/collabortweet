@@ -230,12 +230,13 @@ app.get('/taskStats', function(req, res) {
       var rangeData = '';
 
       if (!req.session.user.isadmin) {
-          rangeData = db.all("SELECT t.taskId, t.taskName, t.question, COUNT(DISTINCT(e.elementId)) AS eCount, COUNT(rd.rangeQuestionId) AS labelCount \
+          rangeData = db.all("SELECT t.taskId, t.taskName, t.question, COUNT(DISTINCT(e.elementId)) AS eCount, COUNT(DISTINCT(rd.elementId)) AS rdCount \
             FROM tasks t \
               LEFT OUTER JOIN elements e ON t.taskId = e.taskId \
               LEFT OUTER JOIN rangeQuestions rq ON t.taskId  = rq.taskId \
-              LEFT OUTER JOIN rangeDecisions rd ON rq.rangeQuestionId = rq.rangeQuestionId \
-              JOIN assignedTasks at ON t.taskId = at.assignedTaskId \
+              LEFT OUTER JOIN rangeDecisions rd ON rq.rangeQuestionId = rd.rangeQuestionId \
+              LEFT OUTER JOIN assignedTasks at ON t.taskId = at.assignedTaskId \
+              LEFT OUTER JOIN users u ON rd.userId = u.userId \
             WHERE t.taskType == 3 \
                     AND at.userId == ? \
             GROUP BY t.taskId \
@@ -243,10 +244,12 @@ app.get('/taskStats', function(req, res) {
               req.session.user.userId);
       }
       else {
-          rangeData = db.all("SELECT t.taskId, t.taskName, t.question, COUNT(DISTINCT(e.elementId)) AS eCount, COUNT(rd.rangeQuestionId) AS labelCount \
+          rangeData = db.all("SELECT t.taskId, t.taskName, t.question, COUNT(DISTINCT(e.elementId)) AS eCount, COUNT(DISTINCT(rd.elementId)) AS rdCount \
             FROM tasks t \
               LEFT OUTER JOIN elements e ON t.taskId = e.taskId \
-              LEFT OUTER JOIN rangeDecisions rd ON e.elementId = rd.elementId \
+              LEFT OUTER JOIN rangeQuestions rq ON e.taskId = rq.taskId \
+              LEFT OUTER JOIN rangeDecisions rd ON rq.rangeQuestionId = rd.rangeQuestionId \
+              LEFT OUTER JOIN users u on rd.userId = u.userId \
             WHERE t.taskType == 3 \
             GROUP BY t.taskId \
             ORDER BY t.taskId");
@@ -263,8 +266,7 @@ app.get('/taskStats', function(req, res) {
         pairTasks: taskData[0],
         labelTasks: taskData[1],
         rangeTasks: taskData[2],
-      }
-
+            }
       res.render('taskStats', dataMap)
     });
 })
@@ -627,7 +629,7 @@ app.get('/csv/:taskId', function (req, res) {
             FROM elements e \
                 JOIN rangeDecisions rd ON e.elementId = rd.elementId \
                 JOIN rangeQuestions rq ON rd.rangeQuestionId = rq.rangeQuestionId \
-                JOIN rangeScales rs ON rq.rangeQuestionId = rs.rangeQuestionId \
+                JOIN rangeScales rs ON rd.rangeScaleId = rs.rangeScaleId \
                 JOIN users u ON u.userId = labelerId \
             WHERE e.taskId = ? \
             ORDER BY e.elementId", taskId);
@@ -667,19 +669,19 @@ app.get('/csv/:taskId', function (req, res) {
             else if (range) {
                 var taskDetails = taskInfoMap["ranges"];
                 
-                taskCSVToSend = 'elementId,externalId,labelerId,lablerScreenname,labelId,labelText,parentLabel,parentLabelText\n';
+                taskCSVToSend = 'elementId,externalId,rangeQuestion,rangeQuestionId,rangeValue,rangeScaleId,labelerScreenname,labelerId\n';
 
                 var concatStr = '';
 
                 taskDetails.forEach(function (index) {
                     concatStr = index['elementId'] + ',' +
                         index['externalId'] + ',' +
-                        index['labelerId'] + ',' +
-                        index['lablerScreename'] + ',' +
-                        index['labelId'] + ',' +
-                        index['labelText'] + ',' +
-                        index['parentLabel'] + ',' +
-                        index['parentLabelText'];
+                        index['rangeQuestion'] + ',' +
+                        index['rangeQuestionId'] + ',' +
+                        index['rangeValue'] + ',' +
+                        index['rangeScaleId'] + ',' +
+                        index['labelerScreenname'] + ',' +
+                        index['labelerId'];
 
                     taskCSVToSend += concatStr + '\n';
                 })
@@ -767,7 +769,7 @@ app.get('/json/:taskId', function(req, res) {
                 FROM rangeQuestions rq, \
                 rangeScales rs \
                 WHERE rq.taskId = ? \
-                ORDER BY rs.rangeOrder; "
+                ORDER BY rs.rangeOrder"
               , taskId)
 
           taskDetails["labels"] = rangeDetails;
