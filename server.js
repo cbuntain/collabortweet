@@ -448,8 +448,8 @@ app.get('/taskStats/:taskId', function(req, res) {
         // Get the users who have labeled this task
         var userLabelDetails = db.all("SELECT u.userId AS uId, u.fname AS fname, u.lname AS lname, COUNT(*) AS count \
               FROM users u \
-                  JOIN elementLabels el ON u.userId=el.userId \
-                  JOIN elements e ON el.elementId=e.elementId \
+                  JOIN elementLabels el ON u.userId = el.userId \
+                  JOIN elements e ON el.elementId = e.elementId \
               WHERE e.taskId = ? \
               GROUP BY u.userId", taskId);
 
@@ -457,25 +457,31 @@ app.get('/taskStats/:taskId', function(req, res) {
 
       }  else if ( taskData.taskType == 3 ) {
 
-        var rangeQuestions = db.all("SELECT rq.rangeQuestionId AS rqId, rq.rangeQuestion AS rqQ \
-            FROM rangeQuestions rq \
-            WHERE rq.taskId = ? \
-            ORDER BY rq.taskId", taskId);
+        var rangeDecisions = db.all("SELECT rs.rangeScaleId AS rsId, rs.rangeValue AS rvText, rd.rangeQuestionId AS rqId \
+            FROM rangeDecisions rd \
+                JOIN rangeScales rs ON rd.rangeQuestionId = rs.rangeQuestionId \
+                JOIN rangeQuestions rq ON rs.rangeQuestionId = rq.rangeQuestionId \
+                WHERE rq.taskId = ? \
+                ORDER BY rq.taskId", taskId); 
 
-        taskDetails["labelOptions"] = rangeQuestions;
+        taskDetails["labelOptions"] = rangeDecisions;
 
-        var labelDetails = db.all("SELECT e.elementId AS eId, e.elementText AS eText, rd.rangeDecisionId AS rDId, rd.rangeQuestionId AS rqId, u.userId AS uId, u.screenname AS screenname, rs.rangeScaleId AS rSId, rs.rangeValue AS rVText \
-            FROM elements e \
-                JOIN rangeDecisions rd ON e.elementId = rd.elementId \
-                JOIN rangeScales rs ON rs.rangeScaleId = rd.rangeScaleId \
-                JOIN users u ON u.userId = rd.userId \
-            WHERE e.taskId = ? \
-            ORDER BY e.elementId", taskId);//group by label details by group and element ids
+                var rangeQuestions = db.all("SELECT e.elementId AS eId, e.elementText AS eText, rq.rangeQuestionId AS rqId, rq.rangeQuestion AS rq, u.userId AS uId, u.screenname AS screenname \
+                FROM elements e \
+                    JOIN rangeDecisions rd ON e.elementId = rd.elementId \
+                    JOIN rangeQuestions rq ON rd.rangeQuestionId = rq.rangeQuestionId \
+                    JOIN users u ON rd.userId = u.userId \
+                WHERE e.taskId = ? \
+                GROUP BY e.elementId \
+                ", taskId);
 
-        taskDetails["labels"] = labelDetails;
+        taskDetails["labels"] = rangeQuestions;
+
         
         // Get the users who have labeled this task
-        var userLabelDetails = db.all("SELECT u.userId AS uId, u.fname AS fname, u.lname AS lname, COUNT(*) AS count \
+        var userLabelDetails = db.all("SELECT u.userId AS uId, u.screenname AS screenname, \
+              u.fname AS fname, u.lname AS lname, \
+              (COUNT(*) / COUNT(DISTINCT(rq.rangeQuestion))) AS count \
               FROM users u \
                   JOIN rangeDecisions rd ON u.userId=rd.userId \
                   JOIN rangeQuestions rq ON rq.rangeQuestionId = rd.rangeQuestionId \
