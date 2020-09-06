@@ -110,18 +110,32 @@ html
 								h4 Entry: #{rowIndex}
 								div !{v.eText}
 
+							
 							div(class="panel-body")
 								h4 User: #{v.screenname}
-								form(id="update-label-"+v.elId, class="update-label", elementlabelid=v.elId)
-									select
-										each opt in labelDetails
-											if v.lId == opt.lId
-												option(value=opt.lId, selected="true") #{opt.lText}
-											else
-												option(value=opt.lId) #{opt.lText}
-									br
-									input(class="btn btn-primary btn-sm", type="button", value="Update")
-				
+
+								form(id="update-label-"+v.elId, class="update-label", elementlabelid=v.rsId)
+									each v2 in detailList
+										if(v.rqId == v2.rqId)
+											each opt in labelDetails
+												if (opt.rqId == v.rqId)
+													span(style="width: 10%; display: inline-block;" class="text-left")
+														p #{opt.rvText}
+														input(
+																type="radio"
+																style="display:block; text-align:center;"
+																id=opt.rqId + "-" + opt.rsId
+																name=opt.rqId
+																value=opt.rvText
+														)
+
+										br
+										br
+
+										input(id=v2.rqId, class="btn btn-primary btn-sm text-center", type="button", value="Update")
+
+										br
+										br
 
 		include includes/jsFooter.pug
 
