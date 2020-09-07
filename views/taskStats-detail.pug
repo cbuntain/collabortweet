@@ -113,8 +113,10 @@ html
 							
 							div(class="panel-body")
 								h4 User: #{v.screenname}
+								p(class="text-center")
+									#{v.rq}
 
-								form(id="update-label-"+v.elId, class="update-label", elementlabelid=v.rsId)
+								form(id="update-range-"+v.eId, class="update-label", elementlabelid=v.rsId)
 									each v2 in detailList
 										if(v.rqId == v2.rqId)
 											each opt in labelDetails
@@ -123,19 +125,20 @@ html
 														p #{opt.rvText}
 														input(
 																type="radio"
-																style="display:block; text-align:center;"
+																class="text-center"
+																style="display:block;"
 																id=opt.rqId + "-" + opt.rsId
 																name=opt.rqId
 																value=opt.rvText
 														)
 
-										br
-										br
+											br
+											br
 
-										input(id=v2.rqId, class="btn btn-primary btn-sm text-center", type="button", value="Update")
+											input(id=v2.rqId, class="btn btn-primary btn-sm text-center", type="button", value="Update")
 
-										br
-										br
+											br
+											br
 
 		include includes/jsFooter.pug
 

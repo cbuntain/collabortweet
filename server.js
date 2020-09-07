@@ -457,7 +457,7 @@ app.get('/taskStats/:taskId', function(req, res) {
 
       }  else if ( taskData.taskType == 3 ) {
 
-        var rangeDecisions = db.all("SELECT rs.rangeScaleId AS rsId, rs.rangeValue AS rvText, rd.rangeQuestionId AS rqId \
+        var rangeDecisions = db.all("SELECT DISTINCT rs.rangeScaleId AS rsId, rs.rangeValue AS rvText, rd.rangeQuestionId AS rqId \
             FROM rangeDecisions rd \
                 JOIN rangeScales rs ON rd.rangeQuestionId = rs.rangeQuestionId \
                 JOIN rangeQuestions rq ON rs.rangeQuestionId = rq.rangeQuestionId \
@@ -466,7 +466,7 @@ app.get('/taskStats/:taskId', function(req, res) {
 
         taskDetails["labelOptions"] = rangeDecisions;
 
-                var rangeQuestions = db.all("SELECT e.elementId AS eId, e.elementText AS eText, rq.rangeQuestionId AS rqId, rq.rangeQuestion AS rq, u.userId AS uId, u.screenname AS screenname \
+        var rangeQuestions = db.all("SELECT e.elementId AS eId, e.elementText AS eText, rq.rangeQuestionId AS rqId, rq.rangeQuestion AS rq, u.userId AS uId, u.screenname AS screenname \
                 FROM elements e \
                     JOIN rangeDecisions rd ON e.elementId = rd.elementId \
                     JOIN rangeQuestions rq ON rd.rangeQuestionId = rq.rangeQuestionId \
