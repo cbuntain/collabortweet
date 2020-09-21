@@ -100,7 +100,12 @@ html
 							li(class="page-item", id="next-button")
 								a(class="page-link", href="#") Next
 
+				- var prevIndex = -1
+				- var rqs = {}
 				- var rowIndex = 0
+				each v, index in detailList
+					- rqs[v.rqId] = v.rqQ
+
 				each v in detailList
 					div(class="row reviewable-row", rowindex=rowIndex)
 						- rowIndex++
@@ -113,16 +118,27 @@ html
 							
 							div(class="panel-body")
 								h4 User: #{v.screenname}
-								p(class="text-center")
-									#{v.rq}
 
-								form(id="update-range-"+v.eId, class="update-label", elementlabelid=v.rsId)
-									each v2 in detailList
-										if(v.rqId == v2.rqId)
-											each opt in labelDetails
-												if (opt.rqId == v.rqId)
-													span(style="width: 10%; display: inline-block;" class="text-left")
-														p #{opt.rvText}
+								each rq, rqId in rqs
+									p(class="text-center")
+									p #{rq}
+
+									form(id="update-range-"+v.eId, class="update-label", elementlabelid=v.rsId)
+										each opt in labelDetails
+											if (opt.rqId == rqId)
+												span(style="width: 10%; display: inline-block;" class="text-left")
+													p #{opt.rvText}
+													if (v.rsId == opt.rsId)
+														input(
+																type="radio"
+																class="text-center"
+																style="display:block;"
+																id=opt.rqId + "-" + opt.rsId
+																name=opt.rqId
+																value=opt.rvText
+																checked="checked"
+														)
+													else
 														input(
 																type="radio"
 																class="text-center"
@@ -132,13 +148,14 @@ html
 																value=opt.rvText
 														)
 
-											br
-											br
+								br
+								br
 
-											input(id=v2.rqId, class="btn btn-primary btn-sm text-center", type="button", value="Update")
+								input(id=rqId, class="btn btn-primary btn-sm text-center", type="button", value="Update")
 
-											br
-											br
+								br
+								br
+
 
 		include includes/jsFooter.pug
 
