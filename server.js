@@ -465,30 +465,12 @@ app.get('/taskStats/:taskId', function (req, res) {
 
                 taskDetails["labelOptions"] = rangeScales;
 
-
-                var usedRQs = {};
-                var usedeIds = Array();
-
                 var rangeQuestions = db.all("SELECT e.elementId AS eId, e.elementText AS eText, u.userId AS uId, u.screenname AS screenname, rq.rangeQuestionId AS rqId, rq.rangeQuestion AS rqQ, rd.rangeScaleId AS rsId \
                     FROM elements e \
                         JOIN rangeDecisions rd ON e.elementId = rd.elementId \
                         JOIN rangeQuestions rq ON rd.rangeQuestionId = rq.rangeQuestionId  \
                         JOIN users u ON rd.userId = u.userId \
-                     ORDER BY e.elementId", (err, row) => {
-                        var flag = false;
-
-                        for (let i = 0; i < usedeIds.length; i++) {
-                            if (row.eId in usedeIds) {
-                                flag = true;
-                            }
-                        }
-
-                        if (!flag) {
-                            usedRQs[usedRQs+1] = row;
-                        }
-                });
-
-                console.log(usedRQs)
+                     ORDER BY e.elementId");	
 
                 //console.log(rangeQuestions);
 
@@ -514,9 +496,26 @@ app.get('/taskStats/:taskId', function (req, res) {
             return Promise.props(taskDetails);
         })
         .then(function (taskInfoMap) {
+            var taskDetails = Array();
+
+            if (taskInfoMap["taskInfo"]["taskType"] == 3) {
+                var usedeIds = Array();
+                var rangeQuestions = Array();
+            
+                taskInfoMap["labels"].forEach(function (index) {
+                    if (usedeIds.indexOf(index.eId) < 0) {
+                        rangeQuestions.push(index);
+                        usedeIds.push(index.eId);
+                    }
+                });
+
+                taskDetails = rangeQuestions;
+            }
+            else {
+                taskDetails = taskInfoMap["labels"];
+            }
 
             var taskInfo = taskInfoMap["taskInfo"];
-            var taskDetails = taskInfoMap["labels"];
             var labelDetails = taskInfoMap["labelOptions"];
             var userDetails = taskInfoMap["userDetails"];
 
