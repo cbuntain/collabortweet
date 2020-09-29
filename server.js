@@ -457,11 +457,10 @@ app.get('/taskStats/:taskId', function (req, res) {
 
             } else if (taskData.taskType == 3) {
 
-                var rangeScales = db.all("SELECT rs.rangeScaleId AS rsId, rs.rangeValue AS rvText, rs.rangeOrder AS rsOrder, rs.rangeQuestionId AS rqId, rq.rangeQuestion AS rqQ \
-            FROM rangeScales rs \
-                    JOIN rangeQuestions rq ON rs.rangeQuestionId = rq.rangeQuestionId \
-            WHERE rq.taskId = ? \
-            ORDER BY rs.rangeOrder", taskId);
+                var rangeScales = db.all("SELECT rs.rangeScaleId AS rsId, rs.rangeValue AS rvText, rs.rangeOrder AS rsOrder, rs.rangeQuestionId AS rqId, rd.rangeScaleId AS rdId \
+            FROM rangeDecisions rd \
+                    JOIN rangeScales rs ON rd.rangeQuestionId = rs.rangeQuestionId \
+            ORDER BY rs.rangeOrder");
 
                 taskDetails["labelOptions"] = rangeScales;
 
@@ -472,9 +471,7 @@ app.get('/taskStats/:taskId', function (req, res) {
                         JOIN users u ON rd.userId = u.userId \
                      ORDER BY e.elementId");	
 
-                //console.log(rangeQuestions);
-
-                taskDetails["labels"] = rangeQuestions;//usedRQs;
+                taskDetails["labels"] = rangeQuestions;
 
                 // Get the users who have labeled this task
                 var userLabelDetails = db.all("SELECT u.userId AS uId, u.screenname AS screenname, \
@@ -498,26 +495,43 @@ app.get('/taskStats/:taskId', function (req, res) {
         .then(function (taskInfoMap) {
             var taskDetails = Array();
 
+            var taskInfo = taskInfoMap["taskInfo"];
+            var labelDetails = taskInfoMap["labelOptions"];
+            var userDetails = taskInfoMap["userDetails"];
+
             if (taskInfoMap["taskInfo"]["taskType"] == 3) {
-                var usedeIds = Array();
+                var usedIds = Array();
                 var rangeQuestions = Array();
-            
+                var rangeScaleDecisions = {
+                    decisions: Array(),
+                    scales: Array()
+                };
+
                 taskInfoMap["labels"].forEach(function (index) {
-                    if (usedeIds.indexOf(index.eId) < 0) {
+                    if (usedIds.indexOf(index.rqId) < 0) {
                         rangeQuestions.push(index);
-                        usedeIds.push(index.eId);
+                        usedIds.push(index.rqId);
                     }
                 });
+
+                taskInfoMap["labelOptions"].forEach(function (index) {
+                    if (rangeScaleDecisions.scales.indexOf(index.rsId) < 0) {
+                        rangeScaleDecisions.scales.push(index);
+
+                        if (rangeScaleDecisions.decisions.indexOf(index.rdId) < 0) {
+                            rangeScaleDecisions.decisions.push(index.rdId);
+                        }
+                    }
+                    
+                });
+
+                labelDetails = rangeScaleDecisions;
 
                 taskDetails = rangeQuestions;
             }
             else {
                 taskDetails = taskInfoMap["labels"];
             }
-
-            var taskInfo = taskInfoMap["taskInfo"];
-            var labelDetails = taskInfoMap["labelOptions"];
-            var userDetails = taskInfoMap["userDetails"];
 
             // Calculate the agreement or quality of labels
             var agreementStats = calculateAgreement(taskInfo, taskDetails, userDetails);
