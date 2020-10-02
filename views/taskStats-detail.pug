@@ -106,6 +106,7 @@ html
 				each v, index in detailList
 					- rqs[v.rqId] = v.rqQ
 
+
 				each v in detailList
 					div(class="row reviewable-row", rowindex=rowIndex)
 						- rowIndex++
@@ -123,19 +124,19 @@ html
 									p(class="text-center")
 									p #{rq}
 
-									form(id="update-range-"+v.eId, class="update-label", elementlabelid=v.rsId)
-										each opt in labelDetails
-											if (opt.rqId == rqId)
+									form(id="update-range-"+v.eId, class="update-label", elementlabelid=v.rsId )
+										each val in labelDetails
+											if (val.rqId == rqId)
 												span(style="width: 10%; display: inline-block;" class="text-left")
-													p #{opt.rvText}
-													if (v.rsId == opt.rsId)
+													p #{val.rvText}
+													if (val.checked == "true")
 														input(
 																type="radio"
 																class="text-center"
 																style="display:block;"
-																id=opt.rqId + "-" + opt.rsId
-																name=opt.rqId
-																value=opt.rvText
+																id=val.rqId + "-" + val.rsId
+																name=val.rqId
+																value=val.rvText
 																checked="checked"
 														)
 													else
@@ -143,9 +144,9 @@ html
 																type="radio"
 																class="text-center"
 																style="display:block;"
-																id=opt.rqId + "-" + opt.rsId
-																name=opt.rqId
-																value=opt.rvText
+																id=val.rqId + "-" + val.rsId
+																name=val.rqId
+																value=val.rvText
 														)
 
 								br

@@ -457,14 +457,15 @@ app.get('/taskStats/:taskId', function (req, res) {
 
             } else if (taskData.taskType == 3) {
 
-                var rangeScales = db.all("SELECT rs.rangeScaleId AS rsId, rs.rangeValue AS rvText, rs.rangeOrder AS rsOrder, rs.rangeQuestionId AS rqId, rd.rangeScaleId AS rdId \
+                var rangeScales = db.all("SELECT rs.rangeScaleId AS rsId, rs.rangeValue AS rvText, rs.rangeOrder AS rsOrder, rs.rangeQuestionId AS rqId, rd.rangeScaleId AS rdId, rd.userId AS uId \
             FROM rangeDecisions rd \
                     JOIN rangeScales rs ON rd.rangeQuestionId = rs.rangeQuestionId \
-            ORDER BY rs.rangeOrder");
+                    JOIN users u ON rd.userId = u.userId \
+            ORDER BY rs.rangeScaleId");
 
                 taskDetails["labelOptions"] = rangeScales;
 
-                var rangeQuestions = db.all("SELECT e.elementId AS eId, e.elementText AS eText, u.userId AS uId, u.screenname AS screenname, rq.rangeQuestionId AS rqId, rq.rangeQuestion AS rqQ, rd.rangeScaleId AS rsId \
+                var rangeQuestions = db.all("SELECT DISTINCT e.elementId AS eId, e.elementText AS eText, rq.rangeQuestionId AS rqId, rq.rangeQuestion AS rqQ, rd.rangeScaleId AS rsId, u.userId AS uId, u.screenname AS screenname \
                     FROM elements e \
                         JOIN rangeDecisions rd ON e.elementId = rd.elementId \
                         JOIN rangeQuestions rq ON rd.rangeQuestionId = rq.rangeQuestionId  \
@@ -502,10 +503,7 @@ app.get('/taskStats/:taskId', function (req, res) {
             if (taskInfoMap["taskInfo"]["taskType"] == 3) {
                 var usedIds = Array();
                 var rangeQuestions = Array();
-                var rangeScaleDecisions = {
-                    decisions: Array(),
-                    scales: Array()
-                };
+                var decisionScales = Array();
 
                 taskInfoMap["labels"].forEach(function (index) {
                     if (usedIds.indexOf(index.rqId) < 0) {
@@ -515,19 +513,20 @@ app.get('/taskStats/:taskId', function (req, res) {
                 });
 
                 taskInfoMap["labelOptions"].forEach(function (index) {
-                    if (rangeScaleDecisions.scales.indexOf(index.rsId) < 0) {
-                        rangeScaleDecisions.scales.push(index);
-
-                        if (rangeScaleDecisions.decisions.indexOf(index.rdId) < 0) {
-                            rangeScaleDecisions.decisions.push(index.rdId);
-                        }
+                    if (index.rsId == index.rdId) {
+                        index.checked = "true";
                     }
-                    
+                    else {
+                        index.checked = "false";
+                    }
+                    decisionScales.push(index);
                 });
 
-                labelDetails = rangeScaleDecisions;
+                labelDetails = decisionScales;
 
                 taskDetails = rangeQuestions;
+
+                console.log(decisionScales);
             }
             else {
                 taskDetails = taskInfoMap["labels"];
