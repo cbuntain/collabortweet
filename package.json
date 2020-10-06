@@ -17,7 +17,7 @@
     "pandas": "0.0.3",
     "passport": "^0.3.2",
     "passport-local": "^1.0.0",
-    "pug": "^2.0.0-beta6",
+    "pug": "^3.0.0",
     "sqlite": "^2.2.4",
     "sqlite3": "^4.0.0"
   },

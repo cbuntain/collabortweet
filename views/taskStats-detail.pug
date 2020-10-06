@@ -101,58 +101,54 @@ html
 								a(class="page-link", href="#") Next
 
 				- var prevIndex = -1
-				- var rqs = {}
 				- var rowIndex = 0
-				each v, index in detailList
-					- rqs[v.rqId] = v.rqQ
 
-
-				each v in detailList
+				each thisUserElementKey of detailList.keys()
+					- thisElementLabels = detailList.get(thisUserElementKey)
 					div(class="row reviewable-row", rowindex=rowIndex)
 						- rowIndex++
 						div(class="panel panel-default")
 
 							div(class="panel-heading") 
 								h4 Entry: #{rowIndex}
-								div !{v.eText}
+								div !{thisElementLabels.eText}
 
 							
 							div(class="panel-body")
-								h4 User: #{v.screenname}
+								h4 User: #{thisElementLabels.screenname}
 
-								each rq, rqId in rqs
+								each rqId of labelDetails.keys()
+									- thisQuestion = labelDetails.get(rqId)
+									- rq = thisQuestion["question"]
+									- rqAnswer = thisElementLabels["labels"].get(rqId)
+									- rqOptions = thisQuestion["options"]
+									- groupName = `${thisUserElementKey}-${thisUserElementKey}`
+
 									p(class="text-center")
 									p #{rq}
 
-									form(id="update-range-"+v.eId, class="update-label", elementlabelid=v.rsId )
-										each val in labelDetails
-											if (val.rqId == rqId)
-												span(style="width: 10%; display: inline-block;" class="text-left")
-													p #{val.rvText}
-													if (val.checked == "true")
-														input(
-																type="radio"
-																class="text-center"
-																style="display:block;"
-																id=val.rqId + "-" + val.rsId
-																name=val.rqId
-																value=val.rvText
-																checked="checked"
-														)
-													else
-														input(
-																type="radio"
-																class="text-center"
-																style="display:block;"
-																id=val.rqId + "-" + val.rsId
-																name=val.rqId
-																value=val.rvText
-														)
-
-								br
-								br
-
-								input(id=rqId, class="btn btn-primary btn-sm text-center", type="button", value="Update")
+									form(id="update-range-"+rqAnswer.rdId, class="update-label", elementlabelid=rqAnswer.rdId)
+										each rqScaleVal in rqOptions
+											span(style="width: 10%; display: inline-block;" class="text-left")
+												p #{rqScaleVal.rsValue}
+												if (rqScaleVal.rsId == rqAnswer.rsId)
+													input(
+														type="radio"
+														class="text-center"
+														style="display:block;"
+														value=rqScaleVal.rsId
+														name=groupName
+														checked="checked"
+													)
+												else
+													input(
+														type="radio"
+														class="text-center"
+														style="display:block;"
+														value=rqScaleVal.rsId
+														name=groupName
+													)
+										input(id=rqAnswer.rdId, class="btn btn-primary btn-sm text-center", type="button", value="Update")
 
 								br
 								br

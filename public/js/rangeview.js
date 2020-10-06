@@ -123,7 +123,7 @@ var loadDataElements = function() {
 	console.log("loadDataElements() called.");
 	$("#loadingDialog").modal('show');
 
-	$.get("/item", function(json) {
+	$.get("/range", function(json) {
 		dataElement = json;
 
 		if ( "empty" in dataElement ) {

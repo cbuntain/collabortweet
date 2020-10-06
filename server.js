@@ -457,34 +457,57 @@ app.get('/taskStats/:taskId', function (req, res) {
 
             } else if (taskData.taskType == 3) {
 
-                var rangeScales = db.all("SELECT rs.rangeScaleId AS rsId, rs.rangeValue AS rvText, rs.rangeOrder AS rsOrder, rs.rangeQuestionId AS rqId, rd.rangeScaleId AS rdId, rd.userId AS uId \
-            FROM rangeDecisions rd \
-                    JOIN rangeScales rs ON rd.rangeQuestionId = rs.rangeQuestionId \
-                    JOIN users u ON rd.userId = u.userId \
-            ORDER BY rs.rangeScaleId");
+                // Get the options users have for this task
+                var rangeQuestions = db.all(
+                    "SELECT \
+                        rq.rangeQuestionId AS rqId, \
+                        rq.rangeQuestion AS rqQ, \
+                        rs.rangeScaleId AS rsId, \
+                        rs.rangeValue AS rsValue, \
+                        rs.rangeOrder as rsOrder \
+                    FROM rangeQuestions rq \
+                        JOIN rangeScales rs ON rs.rangeQuestionId = rq.rangeQuestionId  \
+                    WHERE rq.taskId = ?", taskId);    
 
-                taskDetails["labelOptions"] = rangeScales;
+                taskDetails["labelOptions"] = rangeQuestions;
 
-                var rangeQuestions = db.all("SELECT DISTINCT e.elementId AS eId, e.elementText AS eText, rq.rangeQuestionId AS rqId, rq.rangeQuestion AS rqQ, rd.rangeScaleId AS rsId, u.userId AS uId, u.screenname AS screenname \
-                    FROM elements e \
-                        JOIN rangeDecisions rd ON e.elementId = rd.elementId \
-                        JOIN rangeQuestions rq ON rd.rangeQuestionId = rq.rangeQuestionId  \
+                // Get the answers users have provided for this task
+                var rangeAnswers = db.all(
+                    "SELECT \
+                        rd.rangeDecisionId AS rdId, \
+                        rd.rangeScaleId AS rsId, \
+                        rs.rangeQuestionId AS rqId, \
+                        e.elementId AS eId, \
+                        e.elementText AS eText, \
+                        u.userId AS uId, \
+                        u.screenname AS screenname \
+                    FROM rangeDecisions rd \
+                        JOIN rangeScales rs ON rd.rangeScaleId = rs.rangeScaleId \
+                        JOIN rangeQuestions rq ON rs.rangeQuestionId = rq.rangeQuestionId \
+                        JOIN elements e ON e.elementId = rd.elementId \
                         JOIN users u ON rd.userId = u.userId \
-                     ORDER BY e.elementId");	
+                    WHERE rq.taskId = ? \
+                    ORDER BY rq.rangeQuestionId", taskId
+                );
 
-                taskDetails["labels"] = rangeQuestions;
+                taskDetails["labels"] = rangeAnswers;
 
-                // Get the users who have labeled this task
-                var userLabelDetails = db.all("SELECT u.userId AS uId, u.screenname AS screenname, \
-              u.fname AS fname, u.lname AS lname, \
-              (COUNT(*) / COUNT(DISTINCT(rq.rangeQuestion))) AS count \
-              FROM users u \
-                  JOIN rangeDecisions rd ON u.userId = rd.userId \
-                  JOIN rangeQuestions rq ON rd.rangeQuestionId = rq.rangeQuestionId \
-              GROUP BY u.userId");
+                // Get counts of the users who have labeled this task
+                var userLabelDetails = db.all(
+                    "SELECT \
+                        u.userId AS uId, \
+                        u.screenname AS screenname, \
+                        u.fname AS fname, \
+                        u.lname AS lname, \
+                        COUNT(*)/COUNT(DISTINCT(rs.rangeQuestionId)) AS count \
+                    FROM rangeDecisions rd \
+                        JOIN rangeScales rs ON rd.rangeScaleId = rs.rangeScaleId \
+                        JOIN rangeQuestions rq ON rs.rangeQuestionId = rq.rangeQuestionId \
+                        JOIN users u ON u.userId = rd.userId \
+                    WHERE rq.taskId = ? \
+                    GROUP BY u.userId", taskId);
 
                 taskDetails["userDetails"] = userLabelDetails;
-
 
             } else {
                 console.log("Unknown task type in taskStats/...");
@@ -494,42 +517,79 @@ app.get('/taskStats/:taskId', function (req, res) {
             return Promise.props(taskDetails);
         })
         .then(function (taskInfoMap) {
-            var taskDetails = Array();
 
             var taskInfo = taskInfoMap["taskInfo"];
             var labelDetails = taskInfoMap["labelOptions"];
             var userDetails = taskInfoMap["userDetails"];
+            var taskDetails = taskInfoMap["labels"];
 
+
+
+            // We need to fix up the range question array, so we
+            //  can group by rangeQuestion rather than the range scales
             if (taskInfoMap["taskInfo"]["taskType"] == 3) {
-                var usedIds = Array();
-                var rangeQuestions = Array();
-                var decisionScales = Array();
 
-                taskInfoMap["labels"].forEach(function (index) {
-                    if (usedIds.indexOf(index.rqId) < 0) {
-                        rangeQuestions.push(index);
-                        usedIds.push(index.rqId);
+                // Aggregate range questions, so we can match questions
+                //  to their relevant scales
+                var rangeQuestions = new Map();
+
+                labelDetails.forEach(function(labelOption) {
+                    var rangeQuestionId = labelOption["rqId"];
+
+                    // if this is a new range question...
+                    if ( !rangeQuestions.has(rangeQuestionId) ) {
+                        // Create a default entry for this question
+                        rangeQuestions.set(rangeQuestionId, {
+                            "question": labelOption["rqQ"],
+                            "options": new Array(),
+                        });
                     }
+
+                    var thisQuestionOptions = rangeQuestions.get(rangeQuestionId)["options"];
+                    thisQuestionOptions.push({
+                        "rsId": labelOption["rsId"],
+                        "rsValue": labelOption["rsValue"],
+                        "rsOrder": labelOption["rsOrder"],
+                    });
                 });
 
-                taskInfoMap["labelOptions"].forEach(function (index) {
-                    if (index.rsId == index.rdId) {
-                        index.checked = "true";
+                // Update the label details with the map of range questions
+                labelDetails = rangeQuestions;
+
+                
+
+                // Aggregate the labels, so we can show groups of range scales 
+                //  for each element a user has labeled
+                var labeledElements = new Map();
+
+                taskDetails.forEach(function(labeledRangeScale) {
+                    var thisElementId = labeledRangeScale["eId"];
+                    var thisUserId = labeledRangeScale["uId"];
+
+                    var thisLabelMapKey = `${thisElementId}-${thisUserId}`;
+
+                    // if this is a new element-user pair...
+                    if ( !labeledElements.has(thisLabelMapKey) ) {
+                        // Create a default entry for this element
+                        labeledElements.set(thisLabelMapKey, {
+                            "uId": labeledRangeScale["uId"],
+                            "screenname": labeledRangeScale["screenname"],
+                            "eId": labeledRangeScale["eId"],
+                            "eText": labeledRangeScale["eText"],
+                            "labels": new Map(),
+                        });
                     }
-                    else {
-                        index.checked = "false";
-                    }
-                    decisionScales.push(index);
+
+                    var thisLabeledRangeScale = labeledElements.get(thisLabelMapKey)["labels"];
+                    thisLabeledRangeScale.set(labeledRangeScale["rqId"], {
+                        "rdId": labeledRangeScale["rdId"],
+                        "rsId": labeledRangeScale["rsId"],
+                    });
                 });
 
-                labelDetails = decisionScales;
+                // Update the label details with the map of range questions
+                taskDetails = labeledElements;
 
-                taskDetails = rangeQuestions;
-
-                console.log(decisionScales);
-            }
-            else {
-                taskDetails = taskInfoMap["labels"];
             }
 
             // Calculate the agreement or quality of labels
@@ -950,9 +1010,9 @@ app.get('/range', function (req, res) {
 		FROM elements e \
 		WHERE taskId = ? AND \
 		(SELECT COUNT(*) \
-			FROM elementLabels el \
-			WHERE el.elementId = e.elementId \
-			AND el.userId = ?) == 0 \
+			FROM rangeDecisions rd \
+			WHERE rd.elementId = e.elementId \
+			AND rd.userId = ?) == 0 \
 	 	LIMIT 10', [requestedTask, localUser.userId])
         .then(function (elements) {
 
