@@ -1352,6 +1352,27 @@ app.post('/updateLabel', function (req, res) {
         });
 })
 
+// Receive an updated tweet range-based question's decision
+app.post('/updateRange', function (req, res) {
+    console.log("Update label Body: " + req.body);
+    console.log("\tNew Label ID: " + req.body.newLabelId);
+    console.log("\tElement Label ID: " + req.body.elementLabelId);
+
+    // For now, we don't need the user id...
+    // console.log("\tUser ID: " + req.session.user.userId);
+    // var userId = req.session.user.userId;
+
+    var elementLabelId = req.body.elementLabelId;
+    var decision = req.body.newLabelId;
+
+    db.get('UPDATE elementLabels SET labelId = :decision WHERE elementLabelId = :elementLabelId',
+        [decision, elementLabelId])
+        .then(function () {
+            console.log("Update logged...");
+            res.end();
+        });
+})
+
 // Start the server up
 Promise.resolve()
     // First, try connect to the database 

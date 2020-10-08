@@ -74,19 +74,29 @@ var loadDataElements = function() {
         });
     });
 
-    $('.update-range').each(function () {
+    $('[id^="update-range-"]').change(function () {
+
         // The element-label ID pair is part of the form...
         var elementLabelId = $(this).attr('elementlabelid');
 
         // We need the button in this form.
         var form = $(this);
-        var button = $(this).children("input");
 
         // Set the click function for this form's button to
         //. update the element-label pair with the selected option
-        button.off("click").click(function() {
-            var selectedLabelId = form.children("select").children("option:selected").val();
-            updateSelectedElement(elementLabelId, selectedLabelId);
+        // Need to send the rqid, rsId (decision id) and element id
+        $('input:radio:checked').each(function (index) {
+            var questionLabel = form.attr('id');
+
+            var splitText = questionLabel.split('-');
+            var rqId = splitText[splitText.length - 1];
+
+            var rangeQuestionAndScaleId = {
+                rangeQuestionId: rqId,
+                decisionId : index.val
+            }
+
+            updateSelectedElement(elementLabelId, rangeQuestionAndScaleId);
         });
     });
 }
