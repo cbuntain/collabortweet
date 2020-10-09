@@ -18,7 +18,7 @@ Before starting the server, you need to set up the database. This can be done us
 
 The `tweets2sql.py` script expects three arguments: a JSON file describing the task, the path to the SQLite file you created before, and the path the JSON file containing tweets (either in Twitter's format or Gnip's activity format).
 
-The JSON task description file contains the name of the task, the question you want to ask the user, and the type of task (1 for pairwise comparison, 2 for labeling tasks). For pairwise comparisons, you don't need more information. For the labeling task, you also need to include a list of labels.
+The JSON task description file contains the name of the task, the question you want to ask the user, and the type of task (1 for pairwise comparison, 2 for labeling tasks, 3 for range-based tasks). For pairwise comparisons, you don't need more information. For the labeling task, you also need to include a list of labels.
 
 Examples are below:
 
@@ -50,9 +50,51 @@ Examples are below:
 	    ]
 	}
 
+###Range-based question tasks
+
+The platform also supports labeling of range-based questions, sets of questions with associated scale values as the possible label options
+The task configuration file looks like this for range-based questions:
+{
+	"name": "Nigeria 2014 - Emotional Ranges",
+	"question": "Answer several questions about the emotional range of a social media message.",
+	"questions": [
+		{
+			"question": "Rate the emotional negativity of this tweet",
+			"scale": [
+				"1 - Not At All",
+				"2 - Slightly",
+				"3 - Moderate",
+				"4 - Very",
+				"5 - Incredibly"
+			]
+		},
+		{
+			"question": "Rate the emotional positivity of this tweet",
+			"scale": [
+				"1 - Not At All",
+				"2 - Slightly",
+				"3 - Moderate",
+				"4 - Very",
+				"5 - Incredibly"
+			]
+		}
+	],
+	"type": 3
+}
 
 ### Creating Users
 
 Once your database is populated, you need to add users to the system. Users aren't for authentication so much as ensuring we don't show the same pair to the same user multiple times. Currently, the system uses the __users__ table in the sqlite file, so add users there. Using sqlite, you can do it easily:
 
 	sqlite3 database.sqlite3 'INSERT INTO users (userId, screenname, password, fname, lname) VALUES (1, "cbuntain", "cb123", "Cody", "Buntain")'
+
+## Assigning User Tasks
+
+To assign tasks to individual users, and restrict their ability to see certain tasks
+
+run the bin/assignTask.py file with the following arguments:
+	--database ../DATABASE/PATH
+	--user SCREENNAME
+	--task_id TASKIDNUMBER
+	 
+	i.e. python bin/assignTask.py --database database.sqlite3 --user screenname --task_id 1

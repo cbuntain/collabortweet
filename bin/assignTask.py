@@ -35,12 +35,13 @@ if __name__ == '__main__':
     conn = sqlite3.connect(sqlitePath)
     c = conn.cursor()
 
-    param = (username,);
+    param = (username,)
 
     c.execute("SELECT * FROM users WHERE screenname = ?", param)
 
     row = c.fetchall()
 
+    # Are there any users that match the above screenname?
     if ( len(row) == 0 ):
         print("No user with screen name:", username)
         sys.exit(-1)
@@ -50,7 +51,7 @@ if __name__ == '__main__':
 
     userID = row[0][0]
 
-    fields = (taskId,userID,taskId,userID,) 
+    fields = (taskId,userID,taskId,userID,)
 
     # Assign user a task ID
     c.execute("INSERT INTO assignedTasks(assignedTaskId,userId) SELECT ?, ?" 
