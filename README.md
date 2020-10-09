@@ -50,37 +50,38 @@ Examples are below:
 	    ]
 	}
 
-###Range-based question tasks
+#### Range-based question tasks
 
 The platform also supports labeling of range-based questions, sets of questions with associated scale values as the possible label options
-The task configuration file looks like this for range-based questions:
-{
-	"name": "Nigeria 2014 - Emotional Ranges",
-	"question": "Answer several questions about the emotional range of a social media message.",
-	"questions": [
-		{
-			"question": "Rate the emotional negativity of this tweet",
-			"scale": [
-				"1 - Not At All",
-				"2 - Slightly",
-				"3 - Moderate",
-				"4 - Very",
-				"5 - Incredibly"
-			]
-		},
-		{
-			"question": "Rate the emotional positivity of this tweet",
-			"scale": [
-				"1 - Not At All",
-				"2 - Slightly",
-				"3 - Moderate",
-				"4 - Very",
-				"5 - Incredibly"
-			]
-		}
-	],
-	"type": 3
-}
+The task configuration file looks like this for range-based questions
+
+	{
+		"name": "Nigeria 2014 - Emotional Ranges",
+		"question": "Answer several questions about the emotional range of a social media message.",
+		"questions": [
+			{
+				"question": "Rate the emotional negativity of this tweet",
+				"scale": [
+					"1 - Not At All",
+					"2 - Slightly",
+					"3 - Moderate",
+					"4 - Very",
+					"5 - Incredibly"
+				]
+			},
+			{
+				"question": "Rate the emotional positivity of this tweet",
+				"scale": [
+					"1 - Not At All",
+					"2 - Slightly",
+					"3 - Moderate",
+					"4 - Very",
+					"5 - Incredibly"
+				]
+			}
+		],
+		"type": 3
+	}
 
 ### Creating Users
 
@@ -93,8 +94,9 @@ Once your database is populated, you need to add users to the system. Users aren
 To assign tasks to individual users, and restrict their ability to see certain tasks
 
 run the bin/assignTask.py file with the following arguments:
+
 	--database ../DATABASE/PATH
 	--user SCREENNAME
 	--task_id TASKIDNUMBER
 	 
-	i.e. python bin/assignTask.py --database database.sqlite3 --user screenname --task_id 1
+	Example: python bin/assignTask.py --database database.sqlite3 --user screenname --task_id 1
