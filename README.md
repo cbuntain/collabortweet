@@ -89,7 +89,7 @@ Once your database is populated, you need to add users to the system. Users aren
 
 	sqlite3 database.sqlite3 'INSERT INTO users (userId, screenname, password, fname, lname) VALUES (1, "cbuntain", "cb123", "Cody", "Buntain")'
 
-## Assigning User Tasks
+### Assigning User Tasks
 
 To assign tasks to individual users, and restrict their ability to see certain tasks
 
