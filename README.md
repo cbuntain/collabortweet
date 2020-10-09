@@ -53,7 +53,7 @@ Examples are below:
 #### Range-based question tasks
 
 The platform also supports labeling of range-based questions, sets of questions with associated scale values as the possible label options
-The task configuration file looks like this for range-based questions
+The task configuration file looks like this for range-based questions:
 
 	{
 		"name": "Nigeria 2014 - Emotional Ranges",
@@ -91,9 +91,9 @@ Once your database is populated, you need to add users to the system. Users aren
 
 ### Assigning User Tasks
 
-To assign tasks to individual users, and restrict their ability to see certain tasks
+Assign tasks to individual users, and restrict their ability to see certain tasks.
 
-run the bin/assignTask.py file with the following arguments:
+Run the bin/assignTask.py file with the following arguments:
 
 	--database ../DATABASE/PATH
 	--user SCREENNAME
