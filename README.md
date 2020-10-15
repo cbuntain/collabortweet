@@ -82,6 +82,8 @@ The task configuration file looks like this for range-based questions:
 		],
 		"type": 3
 	}
+	
+	NOTE: The order of the values in each scale is preserved in the database.
 
 ### Creating Users
 
