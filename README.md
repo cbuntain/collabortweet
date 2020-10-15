@@ -50,7 +50,7 @@ Examples are below:
 	    ]
 	}
 
-###Range-based question tasks
+#### Range-based question tasks
 
 The platform also supports labeling of range-based questions, sets of questions with associated scale values as the possible label options
 The task configuration file looks like this for range-based questions:
@@ -89,16 +89,16 @@ Once your database is populated, you need to add users to the system. Users aren
 
 	sqlite3 database.sqlite3 'INSERT INTO users (userId, screenname, password, fname, lname) VALUES (1, "cbuntain", "cb123", "Cody", "Buntain")'
 
-## Assigning User Tasks
+### Assigning User Tasks
 
-To assign tasks to individual users, and restrict their ability to see certain tasks
+Assign tasks to individual users, and restrict their ability to see certain tasks.
 
-run the bin/assignTask.py file with the following arguments:
+Run the bin/assignTask.py file with the following arguments:
 
 	--database ../DATABASE/PATH
 	
 	--user SCREENNAME
 	
 	--task_id TASKIDNUMBER
-	
-	For example: python bin/assignTask.py --database database.sqlite3 --user screenname --task_id 1
+	 
+	Example: python bin/assignTask.py --database database.sqlite3 --user screenname --task_id 1
