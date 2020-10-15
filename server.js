@@ -1355,18 +1355,17 @@ app.post('/updateLabel', function (req, res) {
 // Receive an updated tweet range-based question's decision
 app.post('/updateRange', function (req, res) {
     console.log("Update label Body: " + req.body);
-    console.log("\tNew Label ID: " + req.body.newLabelId);
-    console.log("\tElement Label ID: " + req.body.elementLabelId);
+    console.log("\tNew Scale Decision: " + req.body.newScaleId);
+    console.log("\tDecision ID: " + req.body.previousDecisionId);
 
-    // For now, we don't need the user id...
-    // console.log("\tUser ID: " + req.session.user.userId);
-    // var userId = req.session.user.userId;
+    
+	// Still no need for the userId, all decisions are tracked with a unique ID
+	//var userId = req.session.user.userId;
+	var prevDecision = req.body.previousDecisionId;
+    var newDecision = req.body.newScaleId;
 
-    var elementLabelId = req.body.elementLabelId;
-    var decision = req.body.newLabelId;
-
-    db.get('UPDATE elementLabels SET labelId = :decision WHERE elementLabelId = :elementLabelId',
-        [decision, elementLabelId])
+    db.get('UPDATE rangeDecisions SET rangeScaleId = :newDecision WHERE rangeDecisionId = :prevDecision',
+        [newDecision, prevDecision])
         .then(function () {
             console.log("Update logged...");
             res.end();
