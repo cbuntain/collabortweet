@@ -456,6 +456,12 @@ app.get('/taskStats/:taskId', function (req, res) {
                 taskDetails["userDetails"] = userLabelDetails;
 
             } else if (taskData.taskType == 3) {
+				var userId = "%"
+				
+				if(!req.session.user['isadmin']){
+					userId = req.session.user.userId;
+				}
+				
 
                 // Get the options users have for this task
                 var rangeQuestions = db.all(
@@ -487,7 +493,8 @@ app.get('/taskStats/:taskId', function (req, res) {
                         JOIN elements e ON e.elementId = rd.elementId \
                         JOIN users u ON rd.userId = u.userId \
                     WHERE rq.taskId = ? \
-                    ORDER BY rq.rangeQuestionId", taskId
+					AND u.userId LIKE ? \
+                    ORDER BY rq.rangeQuestionId", taskId, userId
                 );
 
                 taskDetails["labels"] = rangeAnswers;
@@ -505,7 +512,8 @@ app.get('/taskStats/:taskId', function (req, res) {
                         JOIN rangeQuestions rq ON rs.rangeQuestionId = rq.rangeQuestionId \
                         JOIN users u ON u.userId = rd.userId \
                     WHERE rq.taskId = ? \
-                    GROUP BY u.userId", taskId);
+					AND u.userId LIKE ? \
+                    GROUP BY u.userId", taskId, userId);
 
                 taskDetails["userDetails"] = userLabelDetails;
 
