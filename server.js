@@ -740,6 +740,7 @@ app.get('/csv/:taskId', function (req, res) {
               u.userId AS labelerId, \
               u.screenname AS labelerScreenname, \
               rq.rangeQuestion AS rangeQuestion, \
+			  rq.rangeQuestionId AS rangeQuestionId, \
               rs.rangeValue AS rangeValue, \
               rd.rangeScaleId AS rangeScaleId \
             FROM elements e \
