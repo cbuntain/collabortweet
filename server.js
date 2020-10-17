@@ -401,7 +401,12 @@ app.get('/taskStats/:taskId', function (req, res) {
             };
 
             if (taskData.taskType == 1) {
-
+				var userId = "%"
+				
+				if(!req.session.user['isadmin']){
+					userId = req.session.user.userId;
+				}
+				
                 var compDetails = db.all("SELECT c.decision, \
 						e1.elementId AS lId, e1.elementText AS lText, e1.externalId AS lExt, \
 						e2.elementId AS rId, e2.elementText AS rText, e2.externalId AS rExt \
@@ -419,7 +424,8 @@ app.get('/taskStats/:taskId', function (req, res) {
                   JOIN comparisons c ON u.userId=c.userId \
                   JOIN pairs p ON p.pairId=c.pairId \
               WHERE p.taskId = ? \
-              GROUP BY u.userId", taskId);
+			  AND u.userId = ? \
+              GROUP BY u.userId", taskId, userId);
 
                 taskDetails["userDetails"] = userLabelDetails;
 
@@ -427,6 +433,12 @@ app.get('/taskStats/:taskId', function (req, res) {
                 taskDetails["labelOptions"] = null;
 
             } else if (taskData.taskType == 2) {
+				var userId = "%"
+				
+				if(!req.session.user['isadmin']){
+					userId = req.session.user.userId;
+				}
+
 
                 var labelOptions = db.all("SELECT l.labelId AS lId, l.labelText AS lText, l.parentLabel AS lParent \
             FROM labels l \
@@ -441,7 +453,8 @@ app.get('/taskStats/:taskId', function (req, res) {
                 JOIN labels l ON el.labelId = l.labelId \
                 JOIN users u ON u.userId = el.userId \
             WHERE e.taskId = ? \
-            ORDER BY e.elementId", taskId);
+			AND u.userId = ? \
+            ORDER BY e.elementId", taskId, userId);
 
                 taskDetails["labels"] = labelDetails;
 
@@ -451,7 +464,8 @@ app.get('/taskStats/:taskId', function (req, res) {
                   JOIN elementLabels el ON u.userId = el.userId \
                   JOIN elements e ON el.elementId = e.elementId \
               WHERE e.taskId = ? \
-              GROUP BY u.userId", taskId);
+			  AND u.userId = ? \
+              GROUP BY u.userId", taskId, userId);
 
                 taskDetails["userDetails"] = userLabelDetails;
 
