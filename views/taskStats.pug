@@ -42,5 +42,20 @@ html
 								p Labels Provided: #{v.labelCount}
 								p #{v.question}
 
+			if dataMap.rangeTasks.length > 0
+				h2 Available Range Tasks:
+				each v in dataMap.rangeTasks
+					div(class="row")
+						div(class="panel panel-default")
+
+							div(class="panel-heading") 
+								h4 
+									a(href="/taskStats/" + v.taskId) Task #{v.taskId}: #{v.taskName}
+
+							div(class="panel-body")
+								p Elements to Label: #{v.eCount}
+								p Labels Provided: #{v.rdCount}
+								p #{v.question}
+
 
 		include includes/jsFooter.pug

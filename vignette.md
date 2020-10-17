@@ -62,6 +62,8 @@ You can either add many users at once or single users at a time.
 ### Adding many users
 
 Create a `.csv` file containing all users that you want to add, in the following format (one user per row):
+
+Run
 ```
 screenname,password,first_name,last_name
 exampleuser,12345,example,user
@@ -109,6 +111,7 @@ In order to create a task, you need to write a task configuration file. The coll
 - Question: Question to ask of the coders
 - Type: 1 is a pairwise comparison task (omitted from this documentation for now), 2 is a 'classical' labeling task
 - labels: The choices of labels to give to the coders for each object
+
 
 ### Creating a task and importing data
 

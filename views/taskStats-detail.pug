@@ -5,6 +5,9 @@ html
 		include includes/head.pug
 	body
 		include includes/nav.pug
+		
+		<!-- What Task Type is This? -->
+		div(style="display:none:" class="TaskType" id=taskInfo.taskType)
 
 		<!-- Main jumbotron -->
 		div(class="jumbotron")
@@ -39,6 +42,7 @@ html
 		//- Display options
 		div(class="container")
 			if taskInfo.taskType == 1
+				div(class="taskType" style="display:none" taskType=taskInfo.taskType)
 				h2 Comparisons:
 				- var rowIndex = 0
 				each v in detailList
@@ -56,6 +60,7 @@ html
 								p #{v.rText}
 			
 			else if taskInfo.taskType == 2
+				div(class="taskType" style="display:none" taskType=taskInfo.taskType)
 				h2 Labels:
 
 				div(class="row")
@@ -87,6 +92,74 @@ html
 												option(value=opt.lId) #{opt.lText}
 									br
 									input(class="btn btn-primary btn-sm", type="button", value="Update")
+
+
+			else if taskInfo.taskType == 3
+				div(class="taskType" style="display:none" taskType=taskInfo.taskType)
+				h2 Labels:
+
+				div(class="row")
+					nav(aria-label="Page Navigation")
+						ul(class="pagination")
+							li(class="page-item", id="pre-button")
+								a(class="page-link", href="#") Previous
+							li(class="page-item", id="next-button")
+								a(class="page-link", href="#") Next
+
+				- var prevIndex = -1
+				- var rowIndex = 0
+
+				each thisUserElementKey of detailList.keys()
+					- thisElementLabels = detailList.get(thisUserElementKey)
+					div(class="row reviewable-row", rowindex=rowIndex)
+						- rowIndex++
+						div(class="panel panel-default")
+
+							div(class="panel-heading") 
+								h4 Entry: #{rowIndex}
+								div !{thisElementLabels.eText}
+
+							
+							div(class="panel-body")
+								h4 User: #{thisElementLabels.screenname}
+
+								each rqId of labelDetails.keys()
+									- thisQuestion = labelDetails.get(rqId)
+									- rq = thisQuestion["question"]
+									- rqAnswer = thisElementLabels["labels"].get(rqId)
+									- rqOptions = thisQuestion["options"]
+									- groupName = `${thisUserElementKey}-${thisUserElementKey}`
+
+									p(class="text-center")
+									p #{rq}
+
+									form(id="update-range", class="update-label", elementlabelid=rqAnswer.rdId)
+										each rqScaleVal in rqOptions
+											span(style="width: 10%; display: inline-block;" class="text-left")
+												p #{rqScaleVal.rsValue}
+												if (rqScaleVal.rsId == rqAnswer.rsId)
+													input(
+														type="radio"
+														class="text-center"
+														style="display:block;"
+														value=rqScaleVal.rsId
+														decisionId=rqAnswer.rdId
+														name=groupName
+														checked="checked"
+													)
+												else
+													input(
+														type="radio"
+														class="text-center"
+														style="display:block;"
+														value=rqScaleVal.rsId
+														decisionId=rqAnswer.rdId
+														name=groupName
+													)
+										input(id=rqAnswer.rdId, class="btn btn-primary btn-sm text-center", type="button", value="Update")
+
+								br
+								br
 
 
 		include includes/jsFooter.pug
