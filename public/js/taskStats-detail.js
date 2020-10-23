@@ -3,6 +3,8 @@ $( document ).ready(function() {
     loadDataElements();
 });
 
+var result = {};
+
 var updateSelectedElement = function(elementLabelId, labelId) {
     result = {
         elementLabelId: elementLabelId,
@@ -10,6 +12,19 @@ var updateSelectedElement = function(elementLabelId, labelId) {
     }
 
     $.post("/updateLabel", result, function(data) {
+        console.log("Successfully sent update...");
+    })
+}
+
+var updateSelectedRangeElement = function(oldDecisionId, newScaleId){
+	result = {
+        previousDecisionId: oldDecisionId,
+        newScaleId: newScaleId,
+    }
+
+	console.log(result);
+
+    $.post("/updateRange", result, function(data) {
         console.log("Successfully sent update...");
     })
 }
@@ -69,8 +84,25 @@ var loadDataElements = function() {
         // Set the click function for this form's button to
         //. update the element-label pair with the selected option
         button.off("click").click(function() {
-            var selectedLabelId = form.children("select").children("option:selected").val();
-            updateSelectedElement(elementLabelId, selectedLabelId);
-        });
+
+			var selectedLabelId = form.children("select").children("option:selected").val();
+			updateSelectedElement(elementLabelId, selectedLabelId);
+
+		});
     });
+	
+
+    // Set the click function for this form's button to
+	// update the elementrange decision with the selected option
+	// Need to send the rsId (decision id) and radioAnswer (new scale value)
+	$('input:radio').change(function () {
+		var oldDecisionId = $(this).parent().parent('form').attr('elementlabelid');
+		var newRadioAnswer = $(this).val();
+		var thisButton = $(this).parent().parent('form').children('input:button');
+		
+		
+		thisButton.off("click").click(function() {
+			updateSelectedRangeElement(oldDecisionId, newRadioAnswer);
+		});
+	});  
 }

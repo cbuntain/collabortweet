@@ -1,0 +1,66 @@
+//-rangeView.pug
+doctype html
+html
+	head
+		include includes/head.pug
+	body
+		include includes/nav.pug
+
+		<!-- Main jumbotron -->
+		div(class="jumbotron")
+			div(class="container")
+				h2 #{taskName} Question:
+				p #{question}
+
+		//- Display options
+		div(class="container")
+
+			div(class="row")
+				div(class="panel panel-default")
+					div(class="panel-body")
+						div(id="element-content-panel")
+
+			each rangeQuestionObject, rangeQuestionId in ranges
+				- var rangeQuestionObject = ranges[rangeQuestionId]
+				- var rangeQuestion = rangeQuestionObject["rangeQuestion"]
+				- var scaleIndex = 1
+
+				div(class="text-left rangeQuestionContainer")
+					h4 #{rangeQuestion} :
+					h5 Pick One
+
+					span(class="row" id="rangeQuestion" + rangeQuestionId)
+						each scale in rangeQuestionObject["scale"] 
+							span(style="width: 10%; display: inline-block;" class="text-left") 
+								p #{scale["rangeScaleValue"]}
+								input(
+										type="radio"
+										style="display:block; text-align:center;"
+										id=rangeQuestionId + "-" + scale["rangeScaleId"]
+										name=rangeQuestionId
+										value=scale["rangeScaleValue"]
+								)
+								- scaleIndex++
+
+			button.btn.btn-primary.collapse#submit Submit Answers!
+
+
+			//- Footer navigation
+				div(class="row navbar-fixed-bottom")
+					div(class=".col-md-6")
+						ol(class="breadcrumb")
+							li(id="prevCrumb")
+							li(class="active") Current
+							li(id="prevCrumb")
+			div(class="modal fade", id="loadingDialog", tabindex="-1" role="dialog")
+				div(class="modal-dialog", role="document")
+					div(class="modal-content")
+						div(class="modal-header")
+							h4(class="modal-title") Please Wait...
+						div(class="modal-body text-center")
+							img(src="/static/imgs/spinner.gif")
+
+		include includes/jsFooter.pug
+
+		<!-- Script for running the pair viewport -->
+		script(src="/static/js/rangeview.js")

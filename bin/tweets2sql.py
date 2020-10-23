@@ -9,6 +9,7 @@ import itertools
 import random
 
 from utils import insert_labels
+from utils import insert_ranges
 
 taskDescPath = sys.argv[1]
 sqlitePath = sys.argv[2]
@@ -84,21 +85,29 @@ with codecs.open(tweetPath, "r", "utf8") as inFile:
 conn = sqlite3.connect(sqlitePath)
 c = conn.cursor()
 
-c.execute("INSERT INTO tasks (taskName, question, taskType) VALUES (:name,:question,:type)", 
-	taskDesc)
-taskId = c.lastrowid
-print("Task ID:", taskId)
+if taskDesc["type"] != 3:
+        c.execute('INSERT INTO tasks (taskName, question, taskType) VALUES (:name,:question,:type)', 
+                taskDesc)
+        taskId = c.lastrowid
+        print("Task ID:", taskId)
+elif taskDesc["type"] == 3:
+        rangeDesc = [taskDesc["name"], "Range-Based Question", 3]
 
+        c.execute('INSERT INTO tasks (taskName, question, taskType) VALUES (?,?,?)',
+                  rangeDesc)
+        taskId = c.lastrowid
+        
 elementList = [(taskId, x[0], x[1]) for x in tweetList]
 elementIds = []
 for elTup in elementList:
-	c.execute('INSERT INTO elements (taskId, elementText, externalId) VALUES (?,?,?)', 
-		elTup)
-	elId = c.lastrowid
-	elementIds.append(elId)
+        c.execute('INSERT INTO elements (taskId, elementText, externalId) VALUES (?,?,?)', 
+                elTup)
+        elId = c.lastrowid
+        elementIds.append(elId)
 
 print( "Element Count:", len(elementIds))
-
+        
+        
 # Only create pairs if the task type == 1
 if ( taskDesc["type"] == 1 ):
 	# Create the pairs
@@ -135,6 +144,18 @@ elif ( taskDesc["type"] == 2 ):
 
 	print ("Insert labels...")
 	insert_labels(c, taskDesc["labels"], taskId)
+
+# If we are dealing with a range task (type == 3), provide the ranges
+elif(taskDesc["type"] == 3):
+        print("Insert range questions, scales and values...")
+        insert_ranges(c, taskId, taskDesc["name"], taskDesc["questions"])
+
+# If we are dealing with a multiple choice task (type == 4), provide the choices
+elif ( taskDesc["type"] == 4 ):
+
+	print ("Insert choices...")
+	insert_labels(c, taskDesc["labels"], taskId)
+
 
 # Otherwise, we have an invalid task type
 else:
