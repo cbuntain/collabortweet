@@ -18,6 +18,7 @@ if __name__ == '__main__':
     parser.add_argument('--password')
     parser.add_argument('--first_name')
     parser.add_argument('--last_name')
+    parser.add_argument('--admin')
     args = parser.parse_args()
     
     # Establish database connection
@@ -38,10 +39,10 @@ if __name__ == '__main__':
     # Add a single user from cli
     else:
         user_data = (args.screenname, args.password, args.first_name, 
-                     args.last_name)
+                     args.last_name, args.admin)
         c.execute(
-            ('INSERT INTO users (screenname, password, fname, lname) VALUES (?,'
-             '?, ?, ?)'), 
+            ('INSERT INTO users (screenname, password, fname, lname, isadmin) VALUES (?,'
+             '?, ?, ?, ?)'), 
              user_data
         )
 

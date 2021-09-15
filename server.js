@@ -424,8 +424,7 @@ app.get('/taskStats/:taskId', function (req, res) {
                   JOIN comparisons c ON u.userId=c.userId \
                   JOIN pairs p ON p.pairId=c.pairId \
               WHERE p.taskId = ? \
-			  AND u.userId = ? \
-              GROUP BY u.userId", taskId, userId);
+              GROUP BY u.userId", taskId);
 
                 taskDetails["userDetails"] = userLabelDetails;
 
@@ -433,12 +432,17 @@ app.get('/taskStats/:taskId', function (req, res) {
                 taskDetails["labelOptions"] = null;
 
             } else if (taskData.taskType == 2) {
-				var userId = "%"
+				var userId = "%";
+                var isAdmin = false;
+                if (req.session.user['isadmin']){
+                    isAdmin = true;
+                }
 				
 				if(!req.session.user['isadmin']){
 					userId = req.session.user.userId;
 				}
-
+                console.log("User: " + userId)
+                console.log("Admin: " + isAdmin)
 
                 var labelOptions = db.all("SELECT l.labelId AS lId, l.labelText AS lText, l.parentLabel AS lParent \
             FROM labels l \
@@ -447,15 +451,14 @@ app.get('/taskStats/:taskId', function (req, res) {
 
                 taskDetails["labelOptions"] = labelOptions;
 
-                var labelDetails = db.all("SELECT e.elementId AS eId, e.elementText AS eText, el.elementLabelId AS elId, u.userId AS uId, u.screenname AS screenname, l.labelId AS lId, l.labelText AS lText \
-            FROM elements e \
-                JOIN elementLabels el ON e.elementId = el.elementId \
-                JOIN labels l ON el.labelId = l.labelId \
-                JOIN users u ON u.userId = el.userId \
-            WHERE e.taskId = ? \
-			AND u.userId = ? \
-            ORDER BY e.elementId", taskId, userId);
-
+                labelDetails = db.all("SELECT e.elementId AS eId, e.elementText AS eText, el.elementLabelId AS elId, u.userId AS uId, u.screenname AS screenname, l.labelId AS lId, l.labelText AS lText \
+                    FROM elements e \
+                        JOIN elementLabels el ON e.elementId = el.elementId \
+                        JOIN labels l ON el.labelId = l.labelId \
+                        JOIN users u ON u.userId = el.userId \
+                    WHERE e.taskId = ? \
+                    AND u.userId LIKE ? \
+                    ORDER BY e.elementId", taskId, userId);
                 taskDetails["labels"] = labelDetails;
 
                 // Get the users who have labeled this task
@@ -464,16 +467,15 @@ app.get('/taskStats/:taskId', function (req, res) {
                   JOIN elementLabels el ON u.userId = el.userId \
                   JOIN elements e ON el.elementId = e.elementId \
               WHERE e.taskId = ? \
-			  AND u.userId = ? \
-              GROUP BY u.userId", taskId, userId);
+              GROUP BY u.userId", taskId);
 
                 taskDetails["userDetails"] = userLabelDetails;
 
             } else if (taskData.taskType == 3) {
-				var userId = "%"
+				var userId = req.session.user.userId;
 				
 				if(!req.session.user['isadmin']){
-					userId = req.session.user.userId;
+					
 				}
 				
 
@@ -544,8 +546,6 @@ app.get('/taskStats/:taskId', function (req, res) {
             var labelDetails = taskInfoMap["labelOptions"];
             var userDetails = taskInfoMap["userDetails"];
             var taskDetails = taskInfoMap["labels"];
-
-
 
             // We need to fix up the range question array, so we
             //  can group by rangeQuestion rather than the range scales
